@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Spin The Wheel — Mapawa National High School</title>
+<title>Spin The Wheel</title>
 <!-- SheetJS for Excel Import/Export -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -208,7 +208,9 @@
     box-shadow:0 3px 8px rgba(0,0,0,.5), inset 0 0 0 3px rgba(255,255,255,.35);
     cursor:pointer; letter-spacing:1px; z-index:4;
     background:radial-gradient(circle at 35% 30%,#8a7bd6,var(--purple) 65%,#3d2f78);
+    transition:opacity .15s ease;
   }
+  .hub.hub-disabled{ opacity:.45; cursor:not-allowed; }
 
   .spin-btn{
     margin-top:24px; padding:14px 44px; font-size:16px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;
@@ -241,6 +243,79 @@
 
   /* ---------------- PIN LOCK ---------------- */
   #view-lock, #view-newpin{ justify-content:center; align-items:center; padding:40px 20px; text-align:center; }
+
+  /* ---------------- Participant Banner (on wheel view) ---------------- */
+  .participant-banner{
+    background:rgba(242,112,29,.18); border:1px solid rgba(242,112,29,.45); border-radius:999px;
+    padding:7px 18px; font-size:13px; font-weight:bold; color:var(--flame-light); margin:2px 0 10px;
+  }
+
+  /* ---------------- Scoring buttons on result popup ---------------- */
+  #scoringRow{ display:flex; }
+  .score-btn{
+    flex:1; padding:11px; border-radius:12px; border:none; font-weight:bold; font-size:13px;
+    cursor:pointer; letter-spacing:.3px; color:#fff;
+  }
+  .score-btn.correct{ background:linear-gradient(180deg,#7ED957,#4CAF3D); box-shadow:0 3px 0 #2e7d1f; }
+  .score-btn.incorrect{ background:linear-gradient(180deg,#F2705C,#D9432B); box-shadow:0 3px 0 #a12c1a; }
+  .score-btn:active{ transform:translateY(2px); box-shadow:none; }
+
+  /* ---------------- 3D Bingo Draw View ---------------- */
+  #view-draw{ justify-content:flex-start; align-items:center; padding:28px 16px 60px; text-align:center; }
+  .draw-wrap{ width:100%; max-width:480px; display:flex; flex-direction:column; align-items:center; }
+  .draw-title{ font-size:24px; margin-bottom:2px; }
+  .draw-sub{ font-size:13px; color:var(--muted); margin-bottom:22px; }
+
+  .cage-scene{ position:relative; width:260px; height:260px; margin:0 auto 20px; perspective:900px; }
+  .cage-sphere{
+    position:absolute; inset:0; transform-style:preserve-3d;
+    animation:cageIdle 16s linear infinite;
+  }
+  .cage-sphere.tumbling{ animation:cageTumble 1.8s cubic-bezier(.25,.85,.35,1) forwards; }
+  @keyframes cageIdle{ from{ transform:rotateY(0deg) rotateX(10deg); } to{ transform:rotateY(360deg) rotateX(10deg); } }
+  @keyframes cageTumble{
+    0%{ transform:rotateY(0deg) rotateX(10deg) rotateZ(0deg); }
+    55%{ transform:rotateY(1080deg) rotateX(420deg) rotateZ(240deg); }
+    100%{ transform:rotateY(1440deg) rotateX(730deg) rotateZ(360deg); }
+  }
+  .cage-ball{
+    position:absolute; top:50%; left:50%; width:36px; height:36px; margin:-18px 0 0 -18px;
+    border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, #fff, var(--flame-light) 45%, var(--flame) 85%);
+    box-shadow:0 0 10px rgba(0,0,0,.4), inset -5px -5px 9px rgba(0,0,0,.25);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:bold; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  .cage-glow{
+    position:absolute; inset:0; border-radius:50%; pointer-events:none;
+    background:radial-gradient(circle, rgba(242,112,29,.18), transparent 70%);
+  }
+  .cage-shadow{
+    position:absolute; bottom:-6px; left:50%; width:160px; height:22px; transform:translateX(-50%);
+    background:radial-gradient(ellipse, rgba(0,0,0,.45), transparent 70%); border-radius:50%;
+  }
+  .draw-btn{
+    width:92px; height:92px; font-size:12px; line-height:1.3; flex-direction:column;
+  }
+  .draw-btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+  .reveal-card{
+    display:none; margin-top:22px; width:100%; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.16); border-radius:16px; padding:22px;
+  }
+  .reveal-card.show{ display:block; animation:revealPop .4s ease; }
+  @keyframes revealPop{ from{ opacity:0; transform:scale(.85); } to{ opacity:1; transform:scale(1); } }
+  .reveal-label{ font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+  .reveal-name{ font-size:26px; font-weight:bold; margin:8px 0 18px; word-break:break-word; }
+
+  /* ---------------- Scoreboard ---------------- */
+  .score-row{
+    display:flex; align-items:center; justify-content:space-between; padding:10px 12px;
+    background:rgba(255,255,255,.05); border-radius:10px; margin-bottom:8px;
+  }
+  .score-rank{ font-weight:bold; color:var(--flame-light); width:26px; }
+  .score-name{ flex:1; text-align:left; padding:0 8px; }
+  .score-points{ font-weight:bold; }
 
   /* ---------------- SUBSCRIBER EMAIL CHECK ---------------- */
   #view-emailcheck{ justify-content:center; align-items:center; padding:40px 20px; text-align:center; }
@@ -404,6 +479,7 @@
     <button class="ec-submit" id="emailSubmitBtn" onclick="attemptEmailCheck()">Continue</button>
     <div class="ec-msg" id="emailMsg"></div>
   </div>
+  <div class="home-credit" style="margin-top:18px;">Developed by Redden · <a href="https://www.m.me/Redberjames" target="_blank" rel="noopener noreferrer">m.me/Redberjames</a></div>
 </div>
 
 <!-- New PIN Reveal Screen (first-time login only) -->
@@ -446,13 +522,13 @@
   <button class="home-gear" onclick="openGeneralSettings()" title="Settings">⚙</button>
 
   <!-- Clickable Logo with File Chooser -->
-  <div class="logo-container" onclick="document.getElementById('schoolLogoInput').click();" title="Click to change logo">
+  <div class="logo-container" id="logoContainer" onclick="handleLogoClick()" title="Click to change logo">
     <img class="logo-img" id="schoolLogo" alt="School Seal" src="logo.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'1.5\'><path d=\'M12 2L2 7l10 5 10-5-10-5z\'/><path d=\'M2 17l10 5 10-5\'/><path d=\'M2 12l10 5 10-5\'/></svg>'">
-    <div class="logo-overlay">Change Logo</div>
+    <div class="logo-overlay" id="logoOverlay">Change Logo</div>
   </div>
   <input type="file" id="schoolLogoInput" accept="image/*" style="display:none" onchange="uploadSchoolLogo(event)">
 
-  <div class="school-name" id="schoolNameDisplay">Mapawa National High School</div>
+  <div class="school-name" id="schoolNameDisplay">Name of School/Name of Company</div>
   <div class="app-title outline-text">SPIN THE WHEEL</div>
   <div class="app-byline" id="appBylineDisplay">by Teacher Grace</div>
 
@@ -462,8 +538,8 @@
     <button class="subject-add-btn" style="width:100%;" onclick="openSubjectModal()">+ Add New Subject</button>
   </div>
 
-  <div class="home-footer">Works fully offline · Tap a subject to begin</div>
-  <div class="home-credit">Developed by Redden · <a href="https://www.facebook.com/Redberjames" target="_blank" rel="noopener noreferrer">facebook.com/Redberjames</a></div>
+  <div class="home-footer" id="offlineFooterNote" style="display:none;">Works fully offline · Tap a subject to begin</div>
+  <div class="home-credit">Developed by Redden · <a href="https://www.m.me/Redberjames" target="_blank" rel="noopener noreferrer">m.me/Redberjames</a></div>
 </div>
 
 <!-- ============ GENERAL SETTINGS ============ -->
@@ -477,7 +553,7 @@
     <div id="brandingSection">
       <div class="gs-field">
         <label for="gsSchoolName">School Name</label>
-        <input type="text" id="gsSchoolName" placeholder="e.g. Mapawa National High School">
+        <input type="text" id="gsSchoolName" placeholder="e.g. Name of School/Name of Company">
       </div>
       <div class="gs-field">
         <label for="gsByline">Byline (shown under the title)</label>
@@ -485,6 +561,12 @@
       </div>
       <button class="gs-save-btn" onclick="saveGeneralSettings()">Save Changes</button>
       <div class="gs-msg" id="gsMsg"></div>
+
+      <div class="gs-field" style="margin-top:18px;">
+        <label>Logo</label>
+        <p class="hint" style="margin:0 0 8px;">Tap the logo on the home screen to change it, or remove it below.</p>
+        <button class="gs-secondary-btn" onclick="removeSchoolLogo()">Remove Logo (use default)</button>
+      </div>
     </div>
 
     <div id="themeSection">
@@ -510,6 +592,7 @@
   <div class="topbar">
     <button class="icon-btn" onclick="goHome()" title="Back to subjects">←</button>
     <div class="topbar-actions">
+      <button class="icon-btn" id="scoreboardBtn" onclick="openScoreboard()" title="Scoreboard" style="display:none;">🏆</button>
       <button class="icon-btn" id="soundToggleBtn" onclick="toggleSound()" title="Toggle Sound Effects">🔊</button>
       <button class="icon-btn" onclick="openAnswerKey()" title="Answer key">📋</button>
       <button class="icon-btn" onclick="openSettings()" title="Settings">⚙</button>
@@ -518,6 +601,7 @@
 
   <div class="ribbon outline-text" id="wheelRibbon" style="color:#fff;-webkit-text-stroke:1px rgba(0,0,0,.35);">Subject</div>
   <div class="subtitle-pill" id="wheelSubtitle">SPIN THE WHEEL</div>
+  <div class="participant-banner" id="wheelParticipantBanner" style="display:none;"></div>
 
   <div class="wheel-wrap">
     <div class="pointer"></div>
@@ -527,7 +611,6 @@
     <div class="hub" id="hub" onclick="spin()">SPIN</div>
   </div>
 
-  <button class="spin-btn" id="spinBtn" onclick="spin()">Spin</button>
   <div class="status" id="status">—</div>
 
   <div class="history">
@@ -543,7 +626,49 @@
     <div class="result-value" id="resultValue" style="font-size:20px; font-weight:bold; margin:8px 0 16px;">—</div>
     <button class="reveal-btn" id="revealBtn" onclick="revealAnswer()">Show answer</button>
     <div class="answer-line" id="answerLine"></div>
+
+    <div id="scoringRow" style="display:none; gap:10px; margin-top:16px;">
+      <button class="score-btn correct" onclick="markAnswer(true)">✓ Correct</button>
+      <button class="score-btn incorrect" onclick="markAnswer(false)">✗ Incorrect</button>
+    </div>
+
     <button class="modal-close" onclick="closeResultModal()">Close</button>
+  </div>
+</div>
+
+<!-- ============ NAME DRAW (3D Bingo Cage) ============ -->
+<div class="view" id="view-draw">
+  <button class="back-link" onclick="goHome()">← Back to home</button>
+  <div class="draw-wrap">
+    <div class="draw-title outline-text" id="drawTitle">Draw a Name</div>
+    <div class="draw-sub" id="drawSub">—</div>
+
+    <div class="cage-scene">
+      <div class="cage-sphere" id="cageSphere"></div>
+      <div class="cage-glow"></div>
+      <div class="cage-shadow"></div>
+    </div>
+
+    <button class="hub draw-btn" id="drawBtn" onclick="drawParticipant()">🎱<br>DRAW</button>
+
+    <div class="reveal-card" id="revealCard">
+      <div class="reveal-label">Now Answering</div>
+      <div class="reveal-name" id="revealName">—</div>
+      <button class="lock-submit" onclick="continueToWheelAfterDraw()">Continue to Question →</button>
+    </div>
+
+    <button class="ghost-btn" style="margin-top:18px;" onclick="skipDrawToWheel()">Skip — spin without drawing</button>
+  </div>
+</div>
+
+<!-- ============ SCOREBOARD ============ -->
+<div class="view" id="view-scoreboard">
+  <button class="back-link" onclick="closeScoreboard()">← Back</button>
+  <div class="settings-panel" style="max-width:460px; margin:0 auto;">
+    <h2>🏆 Scoreboard</h2>
+    <p class="hint" id="scoreboardSubtitle">Scores for this subject.</p>
+    <div id="scoreboardList"></div>
+    <button class="ghost-btn" style="width:100%; margin-top:16px;" onclick="confirmResetScores()">Reset scores</button>
   </div>
 </div>
 
@@ -575,6 +700,20 @@
     <div class="controls-row">
       <button class="ghost-btn" onclick="resetPool()">Reset round (unmark used)</button>
       <button class="ghost-btn" onclick="clearHistoryFn()">Clear history</button>
+    </div>
+
+    <div id="participantsSection" style="display:none; margin-top:26px; padding-top:20px; border-top:1px solid rgba(255,255,255,.1);">
+      <h2>Participants</h2>
+      <p class="hint">Names get drawn one at a time before each question. Scores are tracked automatically.</p>
+      <div id="participantList"></div>
+      <div class="add-row">
+        <input type="text" id="newParticipantName" placeholder="Student/participant name…" maxlength="60">
+        <button onclick="addParticipant()">+ Add name</button>
+      </div>
+      <div class="controls-row" style="margin-top:10px;">
+        <button class="ghost-btn" onclick="resetParticipantPool()">Reset draw (unmark drawn)</button>
+        <button class="ghost-btn" onclick="confirmResetScores()">Reset scores</button>
+      </div>
     </div>
   </div>
 </div>
@@ -613,6 +752,14 @@
     <div class="form-group" id="uploadSection" style="display:none; margin-top:10px;">
       <label>Upload Image File</label>
       <input type="file" id="subFileInput" accept="image/*" onchange="handleImageUpload(event)">
+    </div>
+
+    <div class="form-group" style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(0,0,0,.08);">
+      <label class="remember-row" style="justify-content:flex-start; color:var(--ink);">
+        <input type="checkbox" id="participantsToggleInput">
+        <span>Draw a student/participant name before each question</span>
+      </label>
+      <p class="hint" style="margin-top:6px;">Optional — manage the name list from this subject's Settings (⚙) once created.</p>
     </div>
 
     <button class="modal-close" style="background:var(--flame);" onclick="saveSubjectForm()">Save Subject</button>
@@ -723,6 +870,7 @@ function manualSave(){
 }
 
 function uploadSchoolLogo(event){
+  if(isOfflineCopy()) return; // locked in offline copies
   const file = event.target.files[0];
   if(file){
     const reader = new FileReader();
@@ -734,6 +882,17 @@ function uploadSchoolLogo(event){
   }
 }
 
+function removeSchoolLogo(){
+  if(isOfflineCopy()) return; // locked in offline copies
+  if(!confirm('Remove your custom logo and go back to the default icon?')) return;
+  localStorage.removeItem('schoolLogoData');
+  document.getElementById('schoolLogo').src = 'logo.png'; // falls back to default via onerror
+  document.getElementById('schoolLogoInput').value = '';
+  const msg = document.getElementById('gsMsg');
+  msg.textContent = 'Logo removed.';
+  setTimeout(()=>{ msg.textContent = ''; }, 2000);
+}
+
 if(localStorage.getItem('schoolLogoData')){
   document.getElementById('schoolLogo').src = localStorage.getItem('schoolLogoData');
 }
@@ -741,6 +900,10 @@ if(localStorage.getItem('schoolLogoData')){
 function initSubject(k){
   if(!subjects[k].pool) subjects[k].pool = subjects[k].items.map((_,i)=>i);
   if(!subjects[k].history) subjects[k].history = [];
+  if(subjects[k].participantsEnabled === undefined) subjects[k].participantsEnabled = false;
+  if(!subjects[k].participants) subjects[k].participants = [];
+  if(!subjects[k].participantPool) subjects[k].participantPool = subjects[k].participants.map((_,i)=>i);
+  if(!subjects[k].scores) subjects[k].scores = {};
 }
 Object.keys(subjects).forEach(initSubject);
 
@@ -807,10 +970,26 @@ function renderSubjects(){
 
   // Hide "Add Subject" and general-settings gear entirely in offline copies —
   // subject list and branding are locked snapshots once downloaded.
+  const offline = isOfflineCopy();
   const addBtn = document.getElementById('addSubjectBtnWrap');
-  if(addBtn) addBtn.style.display = isOfflineCopy() ? 'none' : '';
+  if(addBtn) addBtn.style.display = offline ? 'none' : '';
   const gear = document.querySelector('.home-gear');
-  if(gear) gear.style.display = isOfflineCopy() ? 'none' : '';
+  if(gear) gear.style.display = offline ? 'none' : '';
+
+  // Logo edit is also locked offline — it's part of the branding snapshot.
+  const logoContainer = document.getElementById('logoContainer');
+  if(logoContainer) logoContainer.style.cursor = offline ? 'default' : 'pointer';
+  const logoOverlay = document.getElementById('logoOverlay');
+  if(logoOverlay) logoOverlay.style.display = offline ? 'none' : '';
+
+  // "Works fully offline" note only makes sense in the downloaded copy.
+  const offlineNote = document.getElementById('offlineFooterNote');
+  if(offlineNote) offlineNote.style.display = offline ? '' : 'none';
+}
+
+function handleLogoClick(){
+  if(isOfflineCopy()) return; // locked in offline copies
+  document.getElementById('schoolLogoInput').click();
 }
 
 function deleteSubject(key){
@@ -862,6 +1041,7 @@ function openSubjectModal(key = null){
     document.getElementById('modalTitle').textContent = 'Edit Subject';
     document.getElementById('subNameInput').value = sub.name;
     document.getElementById('subSubtitleInput').value = sub.subtitle;
+    document.getElementById('participantsToggleInput').checked = !!sub.participantsEnabled;
 
     if(sub.icon.startsWith('data:') || sub.icon.startsWith('http')){
       document.getElementById('logoTypeSelect').value = 'upload';
@@ -875,6 +1055,7 @@ function openSubjectModal(key = null){
     document.getElementById('modalTitle').textContent = 'Add New Subject';
     document.getElementById('subNameInput').value = '';
     document.getElementById('subSubtitleInput').value = '';
+    document.getElementById('participantsToggleInput').checked = false;
     document.getElementById('logoTypeSelect').value = 'preset';
     selectedPresetIcon = '📚';
     uploadedCustomIcon = '';
@@ -907,6 +1088,7 @@ function saveSubjectForm(){
     subjects[editingSubjectKey].name = name;
     subjects[editingSubjectKey].subtitle = subtitle;
     subjects[editingSubjectKey].icon = icon;
+    subjects[editingSubjectKey].participantsEnabled = document.getElementById('participantsToggleInput').checked;
   } else {
     const key = 'custom_' + Date.now();
     subjects[key] = {
@@ -915,7 +1097,11 @@ function saveSubjectForm(){
       icon: icon,
       items: [],
       pool: [],
-      history: []
+      history: [],
+      participantsEnabled: document.getElementById('participantsToggleInput').checked,
+      participants: [],
+      participantPool: [],
+      scores: {}
     };
   }
 
@@ -934,19 +1120,31 @@ function goHome(){ showView('view-home'); }
 function openSubject(key){
   activeKey = key;
   initSubject(key);
+  drawnParticipantName = null;
   document.getElementById('wheelRibbon').textContent = subjects[key].name;
   document.getElementById('wheelSubtitle').textContent = subjects[key].subtitle;
+  document.getElementById('wheelParticipantBanner').style.display = 'none';
   closeResultModal();
   document.getElementById('answerLine').classList.remove('show');
   renderHistory();
   drawWheel();
   updateStatus();
-  showView('view-wheel');
+
+  const s = subjects[key];
+  const scoreboardBtn = document.getElementById('scoreboardBtn');
+  scoreboardBtn.style.display = s.participantsEnabled ? '' : 'none';
+
+  if(s.participantsEnabled && s.participants.length > 0){
+    openDrawView();
+  } else {
+    showView('view-wheel');
+  }
 }
 
 function openSettings(){
   document.getElementById('settingsTitle').textContent = 'Edit Items — ' + state().name;
   renderItemList();
+  renderParticipantList();
   showView('view-settings');
 }
 function closeSettings(){
@@ -1100,6 +1298,21 @@ function exportToExcel(){
   if(window.XLSX){
     const data = s.items.map((it, i) => ({ 'No.': i+1, 'Question/Item': it.text, 'Answer': it.answer || '' }));
     const ws = XLSX.utils.json_to_sheet(data);
+
+    // Force the Answer column (C) to Text format. Without this, if you later type
+    // "true" or "false" directly into Excel, Excel auto-converts it to its own
+    // native boolean type and displays it as all-caps TRUE/FALSE — not a bug in
+    // this app, just Excel's default behavior for that word on a General-format cell.
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for(let R = range.s.r; R <= range.e.r; R++){
+      const cellRef = XLSX.utils.encode_cell({ r: R, c: 2 }); // column C = Answer
+      if(ws[cellRef]){
+        ws[cellRef].t = 's';
+        ws[cellRef].z = '@';
+        ws[cellRef].v = String(ws[cellRef].v);
+      }
+    }
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Question Bank");
     XLSX.writeFile(wb, `${s.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_questions.xlsx`);
@@ -1128,9 +1341,30 @@ function importFromExcel(e){
       
       const newItems = [];
       rows.forEach(row => {
-        const text = row['Question/Item'] || row['Question'] || row['item'] || row['Text'] || Object.values(row)[0];
-        const answer = row['Answer'] || row['answer'] || Object.values(row)[1] || '';
-        if(text) newItems.push({ text: String(text).trim(), answer: String(answer).trim() });
+        const keys = Object.keys(row);
+
+        // Use ?? (not ||) so legitimate falsy values (like boolean `false`) aren't
+        // mistaken for "missing" and don't fall through to the wrong column.
+        let text = row['Question/Item'] ?? row['Question'] ?? row['item'] ?? row['Text'];
+        if(text === undefined && keys.length > 0) text = row[keys[0]];
+
+        let answerRaw = row['Answer'] ?? row['answer'];
+        if(answerRaw === undefined && keys.length > 1) answerRaw = row[keys[1]];
+
+        let answer = '';
+        if(typeof answerRaw === 'boolean'){
+          // Excel stores manually-typed true/false as its own native boolean type.
+          answer = answerRaw ? 'True' : 'False';
+        } else if(answerRaw !== undefined && answerRaw !== null){
+          answer = String(answerRaw).trim();
+          const lower = answer.toLowerCase();
+          if(lower === 'true') answer = 'True';
+          else if(lower === 'false') answer = 'False';
+        }
+
+        if(text !== undefined && text !== null && String(text).trim() !== ''){
+          newItems.push({ text: String(text).trim(), answer });
+        }
       });
 
       if(newItems.length){
@@ -1211,15 +1445,15 @@ function drawWheel(){
 /* ---------------- Status & History ---------------- */
 function updateStatus(){
   const s = state();
-  const spinBtn = document.getElementById('spinBtn');
   const hub = document.getElementById('hub');
   if(s.items.length < 2){
     document.getElementById('status').textContent = 'Add at least 2 items in Settings to spin';
-    spinBtn.disabled = true; hub.style.pointerEvents='none';
+    hub.style.pointerEvents='none';
+    hub.classList.add('hub-disabled');
     return;
   }
-  spinBtn.disabled = spinning;
   hub.style.pointerEvents = spinning ? 'none' : 'auto';
+  hub.classList.toggle('hub-disabled', spinning);
   document.getElementById('status').textContent = s.pool.length + ' of ' + s.items.length + ' items left in this round';
 }
 
@@ -1288,6 +1522,7 @@ function spin(){
     document.getElementById('resultNum').textContent = '#' + (targetIndex+1);
     document.getElementById('resultValue').textContent = item.text;
     document.getElementById('revealBtn').style.display = item.answer ? 'inline-block' : 'none';
+    document.getElementById('scoringRow').style.display = drawnParticipantName ? 'flex' : 'none';
     openResultModal();
     addHistory(item);
     updateStatus();
@@ -1314,6 +1549,141 @@ function resetPool(){
   saveState();
   updateStatus();
   showToast('Round reset successfully!');
+}
+
+/* ---------------- Name Draw (3D Bingo Cage) ---------------- */
+let drawnParticipantName = null;
+
+function openDrawView(){
+  const s = state();
+  document.getElementById('revealCard').classList.remove('show');
+  document.getElementById('drawBtn').disabled = false;
+  updateDrawSub();
+  buildCageBalls();
+  showView('view-draw');
+}
+
+function updateDrawSub(){
+  const s = state();
+  document.getElementById('drawSub').textContent = s.participantPool.length + ' of ' + s.participants.length + ' remaining this round';
+}
+
+function buildCageBalls(){
+  const s = state();
+  const sphere = document.getElementById('cageSphere');
+  sphere.innerHTML = '';
+  sphere.classList.remove('tumbling');
+  const total = s.participants.length || 1;
+  const count = Math.min(total, 30);
+  const radius = 105;
+  for(let i=0;i<count;i++){
+    // Fibonacci sphere distribution — evenly scatters balls across a sphere surface
+    const y = 1 - (count === 1 ? 0 : (i / (count-1)) * 2);
+    const r = Math.sqrt(Math.max(0, 1 - y*y));
+    const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+    const x = Math.cos(theta) * r;
+    const z = Math.sin(theta) * r;
+    const ball = document.createElement('div');
+    ball.className = 'cage-ball';
+    ball.textContent = i+1;
+    ball.style.transform = 'translate3d(' + (x*radius).toFixed(1) + 'px,' + (y*radius).toFixed(1) + 'px,' + (z*radius).toFixed(1) + 'px)';
+    sphere.appendChild(ball);
+  }
+}
+
+function drawParticipant(){
+  const s = state();
+  if(!s.participants.length){ alert('Add participants first from Settings (⚙).'); return; }
+  if(s.participantPool.length === 0){ s.participantPool = s.participants.map((_,i)=>i); }
+
+  const btn = document.getElementById('drawBtn');
+  btn.disabled = true;
+  document.getElementById('revealCard').classList.remove('show');
+
+  const sphere = document.getElementById('cageSphere');
+  sphere.classList.remove('tumbling');
+  void sphere.offsetWidth; // restart animation
+  sphere.classList.add('tumbling');
+  if(typeof playClickSound === 'function') playClickSound();
+
+  setTimeout(()=>{
+    const pickPos = Math.floor(Math.random()*s.participantPool.length);
+    const idx = s.participantPool[pickPos];
+    s.participantPool.splice(pickPos,1);
+    drawnParticipantName = s.participants[idx].name;
+    saveState();
+
+    document.getElementById('revealName').textContent = drawnParticipantName;
+    document.getElementById('revealCard').classList.add('show');
+    if(typeof playWinSound === 'function') playWinSound();
+    updateDrawSub();
+    buildCageBalls();
+    btn.disabled = false;
+  }, 1800);
+}
+
+function continueToWheelAfterDraw(){
+  const banner = document.getElementById('wheelParticipantBanner');
+  banner.textContent = 'Now answering: ' + drawnParticipantName;
+  banner.style.display = '';
+  showView('view-wheel');
+}
+
+function skipDrawToWheel(){
+  drawnParticipantName = null;
+  document.getElementById('wheelParticipantBanner').style.display = 'none';
+  showView('view-wheel');
+}
+
+/* ---------------- Scoring ---------------- */
+function markAnswer(isCorrect){
+  const s = state();
+  if(drawnParticipantName){
+    if(!s.scores[drawnParticipantName]) s.scores[drawnParticipantName] = 0;
+    if(isCorrect) s.scores[drawnParticipantName] += 1;
+    saveState();
+    showToast(isCorrect ? (drawnParticipantName + ' scores a point!') : 'Marked — no point this round.');
+  }
+  closeResultModal();
+
+  if(s.participantsEnabled && s.participants.length > 0){
+    drawnParticipantName = null;
+    document.getElementById('wheelParticipantBanner').style.display = 'none';
+    openDrawView();
+  }
+}
+
+/* ---------------- Scoreboard ---------------- */
+function openScoreboard(){
+  renderScoreboard();
+  showView('view-scoreboard');
+}
+function closeScoreboard(){
+  showView('view-wheel');
+}
+function renderScoreboard(){
+  const s = state();
+  document.getElementById('scoreboardSubtitle').textContent = 'Scores for ' + s.name + '.';
+  const list = document.getElementById('scoreboardList');
+  list.innerHTML = '';
+
+  const entries = s.participants.map(p => ({ name: p.name, score: s.scores[p.name] || 0 }));
+  entries.sort((a,b) => b.score - a.score);
+
+  if(entries.length === 0){
+    list.innerHTML = '<p class="hint">No participants yet. Add some from Settings (⚙).</p>';
+    return;
+  }
+
+  entries.forEach((e, i) => {
+    const row = document.createElement('div');
+    row.className = 'score-row';
+    row.innerHTML =
+      '<div class="score-rank">#' + (i+1) + '</div>' +
+      '<div class="score-name">' + escapeHtml(e.name) + '</div>' +
+      '<div class="score-points">' + e.score + ' pt' + (e.score===1?'':'s') + '</div>';
+    list.appendChild(row);
+  });
 }
 
 /* ---------------- Settings Management ---------------- */
@@ -1378,6 +1748,83 @@ function addItem(){
   saveState();
   textEl.value = ''; ansEl.value = '';
   renderItemList();
+}
+
+/* ---------------- Participants Management ---------------- */
+function renderParticipantList(){
+  const s = state();
+  const section = document.getElementById('participantsSection');
+  section.style.display = s.participantsEnabled ? '' : 'none';
+  if(!s.participantsEnabled) return;
+
+  const wrap = document.getElementById('participantList');
+  wrap.innerHTML = '';
+  s.participants.forEach((p, i)=>{
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    const num = document.createElement('div');
+    num.className = 'item-num';
+    num.textContent = i+1;
+    row.appendChild(num);
+
+    const fields = document.createElement('div');
+    fields.className = 'item-fields';
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.value = p.name;
+    nameInput.maxLength = 60;
+    nameInput.addEventListener('input', ()=>{ p.name = nameInput.value; saveState(); });
+    fields.appendChild(nameInput);
+
+    const scoreTag = document.createElement('div');
+    scoreTag.style.cssText = 'font-size:12px; color:var(--muted); padding:8px 4px;';
+    scoreTag.textContent = 'Score: ' + (s.scores[p.name] || 0);
+    fields.appendChild(scoreTag);
+
+    row.appendChild(fields);
+
+    const del = document.createElement('button');
+    del.className = 'remove-btn';
+    del.textContent = '✕';
+    del.title = 'Remove participant';
+    del.addEventListener('click', ()=>{
+      s.participants.splice(i,1);
+      s.participantPool = s.participants.map((_,idx)=>idx);
+      saveState();
+      renderParticipantList();
+    });
+    row.appendChild(del);
+
+    wrap.appendChild(row);
+  });
+}
+
+function addParticipant(){
+  const s = state();
+  const nameEl = document.getElementById('newParticipantName');
+  const name = nameEl.value.trim();
+  if(!name) return;
+  s.participants.push({name: name});
+  s.participantPool = s.participants.map((_,idx)=>idx);
+  saveState();
+  nameEl.value = '';
+  renderParticipantList();
+}
+
+function resetParticipantPool(){
+  state().participantPool = state().participants.map((_,i)=>i);
+  saveState();
+  showToast('Draw pool reset — everyone can be picked again!');
+}
+
+function confirmResetScores(){
+  if(!confirm('Reset all scores for this subject\'s participants? This cannot be undone.')) return;
+  state().scores = {};
+  saveState();
+  renderParticipantList();
+  showToast('Scores reset!');
 }
 
 /* ---------------- Answer Key Modal ---------------- */
@@ -1604,9 +2051,9 @@ async function attemptUnlock(){
 
 function unlockApp(){
   localStorage.removeItem('stw_email_call_count');
-  document.getElementById('view-emailcheck').classList.remove('active');
-  document.getElementById('view-newpin').classList.remove('active');
-  document.getElementById('view-lock').classList.remove('active');
+  // Clear every view's active state (not just the login screens) — this matters most for
+  // offline downloads, since whatever view was open at download time gets baked into the file.
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-home').classList.add('active');
   applyBrandingFromStorage();
   renderSubjects();
