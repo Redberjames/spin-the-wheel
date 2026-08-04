@@ -196,7 +196,12 @@ async function attemptLogin(){
     sessionStorage.setItem('stw_admin_secret', secret);
     showDashboard();
   } catch(e){
-    setLoginMsg('Incorrect admin secret.', false);
+    const raw = (e.message || '').toLowerCase();
+    if(raw.includes('invalid admin secret')){
+      setLoginMsg('Incorrect admin secret.', false);
+    } else {
+      setLoginMsg('Server error — this is likely NOT your password. Details: ' + e.message, false);
+    }
     btn.disabled = false;
   }
 }
