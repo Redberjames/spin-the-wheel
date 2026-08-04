@@ -128,7 +128,7 @@
 
     <div class="card">
       <h2>Add Subscriber</h2>
-      <p class="hint">They'll get a unique PIN automatically the first time they log in with this email.</p>
+      <p class="hint">They'll get a unique PIN automatically the first time they log in. Monthly/Yearly auto-expire — re-adding the same email renews it.</p>
       <div class="add-form">
         <input type="email" id="newSubEmail" placeholder="subscriber@example.com">
         <select id="newSubPlan">
@@ -147,7 +147,7 @@
       <div class="table-scroll">
         <table id="subTable">
           <thead>
-            <tr><th>Email</th><th>Status</th><th>Plan</th><th>Added</th><th>PIN</th><th>Actions</th></tr>
+            <tr><th>Email</th><th>Status</th><th>Plan</th><th>Added</th><th>Expires</th><th>PIN</th><th>Actions</th></tr>
           </thead>
           <tbody id="subTableBody"></tbody>
         </table>
@@ -258,6 +258,7 @@ function renderTable(rows){
     const tr = document.createElement('tr');
 
     const addedDate = r.added_at ? new Date(r.added_at).toLocaleDateString() : '—';
+    const expiresDate = r.expires_at ? new Date(r.expires_at).toLocaleDateString() : 'Never';
     const badgeClass = r.status === 'active' ? 'active' : 'other';
     const pinText = r.has_pin ? 'Claimed' : 'Not yet';
 
@@ -266,6 +267,7 @@ function renderTable(rows){
       <td><span class="badge ${badgeClass}">${escapeHtml(r.status || '—')}</span></td>
       <td>${escapeHtml(r.plan || '—')}</td>
       <td>${addedDate}</td>
+      <td>${expiresDate}</td>
       <td>${pinText}</td>
     `;
 
