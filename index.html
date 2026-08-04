@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spin The Wheel — Mapawa National High School</title>
+<!-- SheetJS for Excel Import/Export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#0F2A54;
+    --navy-mid:#17407A;
+    --sky:#2E86DE;
+    --leaf:#3FA34D;
+    --leaf-dark:#2A7A38;
+    --flame:#F2701D;
+    --flame-light:#FFA552;
+    --cream:#FFFBF2;
+    --ink:#132340;
+    --muted:#6D7FA0;
+    --purple:#5B4B9E;
+    --red:#E14B4B;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% -10%, #1c3f76 0%, transparent 55%),
+      radial-gradient(circle at 100% 110%, #16345f 0%, transparent 50%),
+      var(--navy);
+    font-family:'Trebuchet MS','Segoe UI',Verdana,sans-serif;
+    color:#fff;
+  }
+  .view{ display:none; min-height:100vh; }
+  .view.active{ display:flex; flex-direction:column; align-items:center; }
+  button{ font-family:inherit; }
+
+  .outline-text{
+    font-family:'Arial Black','Arial Bold',Arial,sans-serif;
+    color:#fff;
+    -webkit-text-stroke:2px var(--navy);
+    text-shadow:2px 2px 0 var(--navy), -2px -2px 0 var(--navy), 2px -2px 0 var(--navy), -2px 2px 0 var(--navy), 0 4px 0 rgba(0,0,0,.25);
+    letter-spacing:1px;
+  }
+
+  /* ---------------- HOME ---------------- */
+  #view-home{ justify-content:center; padding:40px 20px 60px; text-align:center; }
+  
+  .logo-container {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 18px;
+    cursor: pointer;
+  }
+  .logo-img{
+    width:100%; height:100%;
+    border-radius:50%;
+    object-fit:cover;
+    box-shadow:0 10px 26px rgba(0,0,0,.45);
+    background: rgba(255,255,255,.1);
+  }
+  .logo-overlay {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #fff; opacity: 0; transition: opacity .2s;
+  }
+  .logo-container:hover .logo-overlay { opacity: 1; }
+
+  .school-name{
+    font-size:24px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; margin:0 0 2px;
+  }
+  .app-title{ font-size:44px; margin:0 0 6px; }
+  .app-byline{ color:#c8d3ea; font-size:15px; margin-bottom:40px; }
+  
+  .subject-grid{
+    display:grid; gap:16px; width:100%; max-width:440px;
+  }
+  .subject-card{
+    position: relative; display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--purple), #3d2f78);
+    border-radius: 16px; padding: 14px 16px;
+    box-shadow: 0 10px 22px rgba(0,0,0,.35);
+    transition: transform .12s ease;
+  }
+  .subject-card:hover{ transform: translateY(-2px); }
+  
+  .subject-btn{
+    display:flex; align-items:center; gap:14px; flex:1;
+    background: none; border: none; padding: 0; cursor: pointer; text-align: left; color: #fff;
+  }
+  .subject-icon{
+    font-size:28px; width:48px; height:48px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.18); border-radius:12px; flex:0 0 auto; overflow:hidden;
+  }
+  .subject-icon img{ width:100%; height:100%; object-fit:cover; }
+  .subject-label b{ display:block; font-size:16px; }
+  .subject-label span{ display:block; font-size:12px; opacity:.85; margin-top:2px; }
+
+  .card-actions {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .subject-action-btn {
+    background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff; border-radius: 8px; width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 13px; transition: background .15s;
+  }
+  .subject-action-btn:hover { background: rgba(255, 255, 255, 0.25); }
+  .subject-action-btn.delete:hover { background: var(--red); border-color: var(--red); }
+
+  .subject-add-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:16px; border-radius:14px; border:1.5px dashed rgba(255,255,255,.3);
+    background:rgba(255,255,255,.05); color:#c8d3ea; cursor:pointer; font-size:14px; font-weight:bold;
+  }
+  .subject-add-btn:hover{ background:rgba(255,255,255,.1); color:#fff; border-color:#fff; }
+
+  .home-footer{ margin-top:44px; font-size:12px; color:var(--muted); }
+  .home-credit{ margin-top:6px; font-size:11px; color:var(--muted); }
+  .home-credit a{ color:var(--flame-light); text-decoration:none; }
+  .home-credit a:hover{ text-decoration:underline; }
+
+  .home-gear{
+    position:fixed; top:16px; right:16px; width:38px; height:38px; border-radius:50%;
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#fff;
+    font-size:17px; cursor:pointer; z-index:5; display:flex; align-items:center; justify-content:center;
+  }
+  .home-gear:hover{ background:rgba(255,255,255,.16); }
+
+  #view-general{ padding:24px 16px 60px; width:100%; max-width:560px; margin:0 auto; align-items:center; }
+  .gs-field{ margin-bottom:16px; text-align:left; }
+  .gs-field label{ display:block; font-size:12px; color:#a89fce; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+  .gs-field input[type=text]{
+    width:100%; padding:11px 13px; border-radius:10px; border:1.5px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.06); color:#fff; font-size:14px; font-family:inherit; outline:none;
+  }
+  .gs-field input[type=text]:focus{ border-color:var(--flame); }
+  .gs-save-btn{
+    width:100%; padding:12px; margin-top:6px; border:none; border-radius:999px; font-weight:bold;
+    letter-spacing:.5px; text-transform:uppercase; font-size:13px; cursor:pointer; color:#fff;
+    background:linear-gradient(180deg,var(--flame-light),var(--flame)); box-shadow:0 4px 0 #b5540f;
+  }
+  .gs-save-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #b5540f; }
+  .gs-section-title{ margin:26px 0 10px; font-size:13px; color:var(--flame-light); text-transform:uppercase; letter-spacing:1px; }
+  .theme-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:12px; }
+  .theme-swatch{
+    height:56px; border-radius:12px; cursor:pointer; border:2px solid transparent;
+    display:flex; align-items:center; justify-content:center; font-size:18px; position:relative;
+  }
+  .theme-swatch.selected{ border-color:#fff; box-shadow:0 0 0 2px var(--flame); }
+  .theme-swatch-label{ position:absolute; bottom:-18px; left:0; right:0; font-size:10px; color:#a89fce; text-align:center; }
+  .gs-secondary-btn{
+    width:100%; padding:12px; margin-top:8px; border:1.5px solid rgba(255,255,255,.2); border-radius:999px;
+    font-weight:bold; letter-spacing:.5px; text-transform:uppercase; font-size:13px; cursor:pointer;
+    color:#fff; background:rgba(255,255,255,.06);
+  }
+  .gs-secondary-btn:hover{ background:rgba(255,255,255,.12); }
+  .gs-msg{ font-size:12px; color:#a6e6b0; margin-top:8px; min-height:14px; text-align:center; }
+
+  /* ---------------- WHEEL VIEW ---------------- */
+  #view-wheel{ padding:22px 16px 60px; width:100%; max-width:600px; margin:0 auto; align-items:center; }
+  .topbar{ width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .icon-btn{
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+    color:#fff; width:40px; height:40px; border-radius:10px; cursor:pointer; font-size:17px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover{ background:rgba(255,255,255,.18); }
+  .topbar-actions{ display:flex; gap:8px; }
+
+  .ribbon{
+    position:relative; margin:10px auto 4px; padding:12px 34px; border-radius:8px; text-align:center;
+    font-size:22px; text-transform:uppercase; max-width:90%; background:var(--purple);
+  }
+  .ribbon::before, .ribbon::after{
+    content:""; position:absolute; top:0; bottom:0; width:20px; background:inherit; filter:brightness(.75);
+  }
+  .ribbon::before{ left:-14px; clip-path:polygon(0 50%, 100% 0, 100% 100%); }
+  .ribbon::after{ right:-14px; clip-path:polygon(0 0, 100% 50%, 0 100%); }
+
+  .subtitle-pill{
+    background:var(--flame); color:#fff; font-weight:bold; font-size:12px; letter-spacing:2px;
+    text-transform:uppercase; padding:6px 16px; border-radius:999px; margin-bottom:18px; box-shadow:0 4px 10px rgba(0,0,0,.3);
+  }
+
+  .wheel-wrap{ position:relative; width:min(400px,86vw); height:min(400px,86vw); margin-top:6px; }
+  .pointer{
+    position:absolute; top:-14px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:15px solid transparent; border-right:15px solid transparent;
+    border-top:24px solid var(--flame); filter:drop-shadow(0 2px 2px rgba(0,0,0,.4)); z-index:5;
+  }
+  .rim{
+    position:absolute; inset:0; border-radius:50%; padding:9px;
+    box-shadow:0 12px 30px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.15);
+    background:conic-gradient(var(--flame), var(--purple), var(--flame));
+  }
+  canvas.wheel-canvas{
+    display:block; width:100%; height:100%; border-radius:50%; background:var(--cream);
+    transition: transform 4.2s cubic-bezier(.15,.9,.15,1);
+  }
+  .hub{
+    position:absolute; top:50%; left:50%; width:60px; height:60px; transform:translate(-50%,-50%);
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:bold; color:#fff; text-align:center;
+    box-shadow:0 3px 8px rgba(0,0,0,.5), inset 0 0 0 3px rgba(255,255,255,.35);
+    cursor:pointer; letter-spacing:1px; z-index:4;
+    background:radial-gradient(circle at 35% 30%,#8a7bd6,var(--purple) 65%,#3d2f78);
+  }
+
+  .spin-btn{
+    margin-top:24px; padding:14px 44px; font-size:16px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;
+    border:none; border-radius:999px; background:linear-gradient(180deg,var(--flame-light),var(--flame));
+    color:#fff; cursor:pointer; box-shadow:0 6px 0 #b5540f, 0 10px 18px rgba(0,0,0,.35); transition:transform .08s ease;
+  }
+  .spin-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 #b5540f, 0 6px 12px rgba(0,0,0,.35); }
+  .spin-btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+  .status{ margin-top:12px; font-size:13px; color:#c8d3ea; text-align:center; min-height:18px; }
+
+  .result-card{
+    margin-top:20px; width:100%; max-width:480px; background:var(--cream); color:var(--ink);
+    border-radius:16px; padding:28px 26px; box-shadow:0 14px 30px rgba(0,0,0,.4);
+    opacity:0; transform:translateY(6px) scale(.97); transition:opacity .35s ease, transform .35s ease; text-align:center;
+  }
+  .result-card.show{ opacity:1; transform:translateY(0) scale(1); }
+  .result-num{
+    display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px;
+    border-radius:50%; background:var(--flame); color:#fff; font-size:14px; font-weight:bold; margin-bottom:12px;
+  }
+  .result-value{ font-size:28px; font-weight:bold; line-height:1.3; word-break:break-word; }
+  .reveal-btn{
+    margin-top:16px; background:none; border:1.5px dashed var(--muted); color:var(--navy-mid);
+    padding:10px 20px; border-radius:10px; font-size:14px; cursor:pointer; font-weight:bold;
+  }
+  .reveal-btn:hover{ border-color:var(--navy-mid); }
+  .answer-line{ margin-top:14px; font-size:22px; font-weight:bold; color:var(--leaf-dark); display:none; }
+  .answer-line.show{ display:block; }
+
+  /* ---------------- PIN LOCK ---------------- */
+  #view-lock, #view-newpin{ justify-content:center; align-items:center; padding:40px 20px; text-align:center; }
+
+  /* ---------------- SUBSCRIBER EMAIL CHECK ---------------- */
+  #view-emailcheck{ justify-content:center; align-items:center; padding:40px 20px; text-align:center; }
+  #emailInput{
+    width:100%; padding:14px 16px; border-radius:12px; border:1.5px solid rgba(255,255,255,.2);
+    background:rgba(255,255,255,.08); color:#fff; font-size:16px;
+    text-align:center; font-family:inherit; outline:none;
+  }
+  #emailInput:focus{ border-color:var(--flame); }
+  .ec-submit{
+    margin-top:16px; width:100%; padding:13px; font-size:15px; font-weight:bold; letter-spacing:1px;
+    text-transform:uppercase; border:none; border-radius:999px;
+    background:linear-gradient(180deg,var(--flame-light),var(--flame));
+    color:#fff; cursor:pointer; box-shadow:0 5px 0 #b5540f; transition:transform .08s ease;
+  }
+  .ec-submit:active{ transform:translateY(3px); box-shadow:0 2px 0 #b5540f; }
+  .ec-submit:disabled{ opacity:.5; cursor:not-allowed; }
+  .ec-msg{ margin-top:14px; font-size:13px; min-height:16px; color:#ffb3b3; }
+  .ec-msg.ok{ color:#a6e6b0; }
+  .lock-box{
+    width:100%; max-width:360px; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14); border-radius:18px;
+    padding:34px 28px; box-shadow:0 14px 30px rgba(0,0,0,.4);
+  }
+  .lock-icon{
+    width:64px; height:64px; margin:0 auto 16px; border-radius:50%;
+    background:linear-gradient(135deg, var(--purple), #3d2f78);
+    display:flex; align-items:center; justify-content:center; font-size:28px;
+    box-shadow:0 8px 18px rgba(0,0,0,.35);
+  }
+  .lock-title{ font-size:20px; font-weight:bold; margin:0 0 4px; }
+  .lock-sub{ font-size:13px; color:#c8d3ea; margin-bottom:22px; }
+  #pinInput{
+    width:100%; padding:14px 16px; border-radius:12px; border:1.5px solid rgba(255,255,255,.2);
+    background:rgba(255,255,255,.08); color:#fff; font-size:20px; letter-spacing:4px;
+    text-align:center; font-family:inherit; outline:none;
+  }
+  #pinInput:focus{ border-color:var(--flame); }
+  #pinInput::placeholder{ letter-spacing:normal; font-size:14px; color:#8a99c0; }
+  .lock-submit{
+    margin-top:16px; width:100%; padding:13px; font-size:15px; font-weight:bold; letter-spacing:1px;
+    text-transform:uppercase; border:none; border-radius:999px;
+    background:linear-gradient(180deg,var(--flame-light),var(--flame));
+    color:#fff; cursor:pointer; box-shadow:0 5px 0 #b5540f; transition:transform .08s ease;
+  }
+  .lock-submit:active{ transform:translateY(3px); box-shadow:0 2px 0 #b5540f; }
+  .lock-submit:disabled{ opacity:.5; cursor:not-allowed; }
+  .remember-row{
+    display:flex; align-items:center; gap:8px; justify-content:center; margin-top:14px;
+    font-size:13px; color:#c8d3ea; cursor:pointer; user-select:none;
+  }
+  .remember-row input{ width:16px; height:16px; accent-color:var(--flame); cursor:pointer; }
+  .lock-back{
+    display:block; margin:16px auto 0; background:none; border:none; color:#8a99c0;
+    font-size:12px; cursor:pointer; text-decoration:underline;
+  }
+  .lock-msg{ margin-top:14px; font-size:13px; min-height:16px; color:#ffb3b3; }
+  .lock-msg.ok{ color:#a6e6b0; }
+
+  /* ---------------- SETTINGS VIEW ---------------- */
+  #view-settings{ padding:24px 16px 60px; width:100%; max-width:560px; margin:0 auto; align-items:center; }
+  .settings-panel{ width:100%; background:#1f1846; border-radius:16px; padding:22px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+  .settings-panel h2{ margin:0 0 4px; font-size:16px; letter-spacing:1px; text-transform:uppercase; color:var(--flame-light); }
+  .settings-panel p.hint{ margin:0 0 16px; font-size:13px; color:#a89fce; }
+
+  .excel-tools{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .tool-btn{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:10px; border-radius:10px; border:none; background:rgba(255,255,255,.08); color:#fff;
+    font-size:13px; font-weight:bold; cursor:pointer; border:1px solid rgba(255,255,255,.15);
+  }
+  .tool-btn:hover{ background:rgba(255,255,255,.18); }
+
+  .item-row{ display:flex; align-items:flex-start; gap:8px; margin-bottom:10px; }
+  .item-num{
+    flex:0 0 auto; width:26px; height:26px; border-radius:50%; background:var(--flame);
+    color:#fff; font-size:11px; font-weight:bold; display:flex; align-items:center; justify-content:center; margin-top:6px;
+  }
+  .item-fields{ flex:1; display:flex; flex-direction:column; gap:6px; }
+  .item-fields input{
+    padding:9px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.06); color:#fff; font-size:14px;
+  }
+  .item-fields input:focus{ outline:2px solid var(--flame); outline-offset:1px; }
+  .item-fields input.answer-input{ font-size:12.5px; opacity:.9; }
+  .item-fields input.answer-input::placeholder{ color:#8a80b0; }
+  .remove-btn{ background:none; border:none; color:#e77; font-size:18px; cursor:pointer; padding:4px 6px; margin-top:4px; }
+  .remove-btn:hover{ color:#ff9a9a; }
+
+  .add-row{ display:flex; flex-direction:column; gap:8px; margin-top:14px; padding-top:14px; border-top:1px dashed rgba(255,255,255,.15); }
+  .add-row input{ padding:9px 10px; border-radius:8px; border:1px dashed rgba(255,255,255,.25); background:transparent; color:#fff; font-size:14px; }
+  .add-row button{ padding:10px 16px; border-radius:8px; border:none; background:var(--flame); color:#fff; font-weight:bold; cursor:pointer; }
+  .add-row button:hover{ background:var(--flame-light); }
+
+  .save-bar{ display:flex; gap:10px; margin-top:18px; }
+  .primary-save-btn{
+    flex:1; padding:14px; border-radius:10px; border:none; background:var(--leaf);
+    color:#fff; font-size:15px; font-weight:bold; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25);
+  }
+  .primary-save-btn:hover{ background:var(--leaf-dark); }
+
+  .controls-row{ display:flex; justify-content:space-between; align-items:center; margin-top:14px; flex-wrap:wrap; gap:10px; }
+  .ghost-btn{ background:none; border:1px solid rgba(255,255,255,.25); color:#a89fce; padding:8px 14px; border-radius:8px; font-size:13px; cursor:pointer; }
+  .ghost-btn:hover{ color:#fff; border-color:#fff; }
+  .back-link{ align-self:flex-start; background:none; border:none; color:#c8d3ea; font-size:14px; cursor:pointer; margin-bottom:16px; display:flex; align-items:center; gap:6px; }
+  .back-link:hover{ color:#fff; }
+
+  /* ---------------- MODALS & PRESETS ---------------- */
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(100px);
+    background:var(--leaf-dark); color:#fff; padding:12px 24px; border-radius:999px;
+    font-weight:bold; font-size:14px; box-shadow:0 8px 20px rgba(0,0,0,.4);
+    opacity:0; transition:all .3s ease; z-index:100; pointer-events:none;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(6,10,25,.75); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal-backdrop.active{ display:flex; }
+  .modal-box{ background:var(--cream); color:var(--ink); border-radius:14px; width:100%; max-width:480px; max-height:85vh; overflow-y:auto; padding:22px; }
+  .modal-box h3{ margin:0 0 4px; }
+  .modal-box p.hint{ margin:0 0 14px; font-size:13px; color:var(--muted); }
+
+  .preset-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 6px;
+  }
+  .preset-item {
+    font-size: 24px; padding: 10px; background: #f0e8d5; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    border: 2px solid transparent; transition: all .15s;
+  }
+  .preset-item:hover, .preset-item.selected {
+    border-color: var(--flame); background: #fff; transform: scale(1.05);
+  }
+
+  .ak-row{ display:flex; gap:10px; padding:8px 0; border-bottom:1px solid #eee0c0; font-size:13.5px; }
+  .ak-num{ flex:0 0 auto; width:22px; height:22px; border-radius:50%; background:var(--flame); color:#fff; font-size:11px; font-weight:bold; display:flex; align-items:center; justify-content:center; }
+  .ak-text{ flex:1; }
+  .ak-answer{ font-weight:bold; color:var(--leaf-dark); white-space:nowrap; }
+  .modal-close{ display:block; margin:16px auto 0; padding:9px 24px; border-radius:999px; border:none; background:var(--navy); color:#fff; font-weight:bold; cursor:pointer; }
+
+  .form-group{ display:flex; flex-direction:column; gap:4px; margin-bottom:12px; }
+  .form-group label{ font-size:12px; font-weight:bold; color:var(--navy); }
+  .form-group input, .form-group select{ padding:10px; border-radius:8px; border:1px solid #ccc; font-size:14px; }
+
+  .history{ margin-top:14px; width:100%; max-width:400px; }
+  .history-title{ font-size:12px; letter-spacing:1px; text-transform:uppercase; color:#a89fce; margin-bottom:6px; }
+  .history-list{ max-height:110px; overflow-y:auto; font-size:12.5px; color:#c8d3ea; }
+  .history-list div{ padding:4px 0; border-bottom:1px dashed rgba(255,255,255,.08); }
+  .history-list span{ color:#fff; }
+</style>
+</head>
+<body>
+
+<!-- Subscriber Email Check -->
+<div class="view active" id="view-emailcheck">
+  <div class="lock-box">
+    <div class="lock-icon">✉️</div>
+    <h2 class="lock-title" style="-webkit-text-stroke:0;text-shadow:none;">Sign In</h2>
+    <p class="lock-sub">Enter your subscriber email to continue</p>
+    <input type="email" id="emailInput" autocomplete="email" placeholder="you@example.com">
+    <button class="ec-submit" id="emailSubmitBtn" onclick="attemptEmailCheck()">Continue</button>
+    <div class="ec-msg" id="emailMsg"></div>
+  </div>
+</div>
+
+<!-- New PIN Reveal Screen (first-time login only) -->
+<div class="view" id="view-newpin">
+  <div class="lock-box">
+    <div class="lock-icon">🔑</div>
+    <h2 class="lock-title" style="-webkit-text-stroke:0;text-shadow:none;">Your PIN</h2>
+    <p class="lock-sub">This is your unique PIN — save it, you'll need it to sign in next time.</p>
+    <div id="newPinDisplay" style="font-size:32px; letter-spacing:8px; font-weight:bold; margin:18px 0; color:#fff;"></div>
+    <label class="remember-row">
+      <input type="checkbox" id="newPinRememberCheckbox">
+      <span>Remember me on this device</span>
+    </label>
+    <button class="lock-submit" onclick="confirmNewPin()">I've saved it — Continue</button>
+  </div>
+</div>
+
+<!-- PIN Lock Screen -->
+<div class="view" id="view-lock">
+  <div class="lock-box">
+    <div class="lock-icon">🔒</div>
+    <h2 class="lock-title" style="-webkit-text-stroke:0;text-shadow:none;">Enter Your PIN</h2>
+    <p class="lock-sub" id="pinScreenEmail">Enter the PIN for your account</p>
+    <input type="password" id="pinInput" inputmode="numeric" autocomplete="off" placeholder="Enter PIN" maxlength="20">
+    <label class="remember-row">
+      <input type="checkbox" id="rememberMeCheckbox">
+      <span>Remember me on this device</span>
+    </label>
+    <button class="lock-submit" id="pinSubmitBtn" onclick="attemptUnlock()">Unlock</button>
+    <div class="lock-msg" id="lockMsg"></div>
+    <button class="lock-back" onclick="backToEmailScreen()">← Use a different email</button>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast">💾 Saved successfully!</div>
+
+<!-- ============ HOME ============ -->
+<div class="view" id="view-home">
+  <button class="home-gear" onclick="openGeneralSettings()" title="Settings">⚙</button>
+
+  <!-- Clickable Logo with File Chooser -->
+  <div class="logo-container" onclick="document.getElementById('schoolLogoInput').click();" title="Click to change logo">
+    <img class="logo-img" id="schoolLogo" alt="School Seal" src="logo.png" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'1.5\'><path d=\'M12 2L2 7l10 5 10-5-10-5z\'/><path d=\'M2 17l10 5 10-5\'/><path d=\'M2 12l10 5 10-5\'/></svg>'">
+    <div class="logo-overlay">Change Logo</div>
+  </div>
+  <input type="file" id="schoolLogoInput" accept="image/*" style="display:none" onchange="uploadSchoolLogo(event)">
+
+  <div class="school-name" id="schoolNameDisplay">Mapawa National High School</div>
+  <div class="app-title outline-text">SPIN THE WHEEL</div>
+  <div class="app-byline" id="appBylineDisplay">by Teacher Grace</div>
+
+  <div class="subject-grid" id="subjectGrid"></div>
+
+  <div style="margin-top: 16px; width: 100%; max-width: 440px;" id="addSubjectBtnWrap">
+    <button class="subject-add-btn" style="width:100%;" onclick="openSubjectModal()">+ Add New Subject</button>
+  </div>
+
+  <div class="home-footer">Works fully offline · Tap a subject to begin</div>
+  <div class="home-credit">Developed by Redden · <a href="https://www.facebook.com/Redberjames" target="_blank" rel="noopener noreferrer">facebook.com/Redberjames</a></div>
+</div>
+
+<!-- ============ GENERAL SETTINGS ============ -->
+<div class="view" id="view-general">
+  <button class="back-link" onclick="closeGeneralSettings()">← Back to home</button>
+  <div class="settings-panel">
+    <h2>App Settings</h2>
+    <p class="hint">Customize branding, theme, and get an offline copy of this app.</p>
+    <p class="hint" id="offlineLockedNotice" style="display:none; color:#ffb3b3;">Branding, theme, and subjects are locked in this offline copy. Only sign-out is available here.</p>
+
+    <div id="brandingSection">
+      <div class="gs-field">
+        <label for="gsSchoolName">School Name</label>
+        <input type="text" id="gsSchoolName" placeholder="e.g. Mapawa National High School">
+      </div>
+      <div class="gs-field">
+        <label for="gsByline">Byline (shown under the title)</label>
+        <input type="text" id="gsByline" placeholder="e.g. by Teacher Grace">
+      </div>
+      <button class="gs-save-btn" onclick="saveGeneralSettings()">Save Changes</button>
+      <div class="gs-msg" id="gsMsg"></div>
+    </div>
+
+    <div id="themeSection">
+      <div class="gs-section-title">Theme Color</div>
+      <div class="theme-grid" id="themeGrid"></div>
+    </div>
+
+    <div class="gs-section-title" id="offlineSectionTitle">Offline Copy</div>
+    <div id="offlineSectionBody">
+      <p class="hint" style="margin-bottom:10px;">Download a self-contained copy of this app — with your current logo, subjects, branding, and theme baked in — that works fully offline on any device.</p>
+      <button class="gs-secondary-btn" onclick="downloadOfflineCopy()">⬇ Download Offline Version</button>
+    </div>
+    <p class="hint" id="offlineNotice" style="display:none;">This is already an offline copy — everything you need is baked in. Nothing more to download.</p>
+
+    <div class="gs-section-title">Account</div>
+    <p class="hint" id="signedInAsText" style="margin-bottom:10px;"></p>
+    <button class="gs-secondary-btn" onclick="signOutDevice()">Sign Out / Forget This Device</button>
+  </div>
+</div>
+
+<!-- ============ WHEEL ============ -->
+<div class="view" id="view-wheel">
+  <div class="topbar">
+    <button class="icon-btn" onclick="goHome()" title="Back to subjects">←</button>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="soundToggleBtn" onclick="toggleSound()" title="Toggle Sound Effects">🔊</button>
+      <button class="icon-btn" onclick="openAnswerKey()" title="Answer key">📋</button>
+      <button class="icon-btn" onclick="openSettings()" title="Settings">⚙</button>
+    </div>
+  </div>
+
+  <div class="ribbon outline-text" id="wheelRibbon" style="color:#fff;-webkit-text-stroke:1px rgba(0,0,0,.35);">Subject</div>
+  <div class="subtitle-pill" id="wheelSubtitle">SPIN THE WHEEL</div>
+
+  <div class="wheel-wrap">
+    <div class="pointer"></div>
+    <div class="rim">
+      <canvas class="wheel-canvas" id="wheel" width="800" height="800"></canvas>
+    </div>
+    <div class="hub" id="hub" onclick="spin()">SPIN</div>
+  </div>
+
+  <button class="spin-btn" id="spinBtn" onclick="spin()">Spin</button>
+  <div class="status" id="status">—</div>
+
+  <div class="history">
+    <div class="history-title">History</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+</div>
+
+<!-- Result Popup -->
+<div class="modal-backdrop" id="resultModal">
+  <div class="modal-box" style="text-align:center;">
+    <div class="result-num" id="resultNum" style="font-size:14px; font-weight:bold; letter-spacing:1px; color:var(--muted); text-transform:uppercase;">#</div>
+    <div class="result-value" id="resultValue" style="font-size:20px; font-weight:bold; margin:8px 0 16px;">—</div>
+    <button class="reveal-btn" id="revealBtn" onclick="revealAnswer()">Show answer</button>
+    <div class="answer-line" id="answerLine"></div>
+    <button class="modal-close" onclick="closeResultModal()">Close</button>
+  </div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div class="view" id="view-settings">
+  <button class="back-link" onclick="closeSettings()">← Back to wheel</button>
+  <div class="settings-panel">
+    <h2 id="settingsTitle">Edit Items</h2>
+    <p class="hint">Edit question bank text and answers. Import/Export via Excel below.</p>
+
+    <!-- Excel Tools -->
+    <div class="excel-tools">
+      <button class="tool-btn" onclick="exportToExcel()">📤 Export (Excel)</button>
+      <button class="tool-btn" onclick="document.getElementById('excelFileInput').click();">📥 Import (Excel)</button>
+      <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importFromExcel(event)">
+    </div>
+
+    <div id="itemList"></div>
+    <div class="add-row">
+      <input type="text" id="newItemText" placeholder="New question/item text…" maxlength="80">
+      <input type="text" id="newItemAnswer" placeholder="Answer (optional)…" maxlength="60">
+      <button onclick="addItem()">+ Add item</button>
+    </div>
+
+    <div class="save-bar">
+      <button class="primary-save-btn" onclick="manualSave()">💾 Save Changes</button>
+    </div>
+
+    <div class="controls-row">
+      <button class="ghost-btn" onclick="resetPool()">Reset round (unmark used)</button>
+      <button class="ghost-btn" onclick="clearHistoryFn()">Clear history</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ADD/EDIT SUBJECT MODAL ============ -->
+<div class="modal-backdrop" id="subjectModal">
+  <div class="modal-box">
+    <h3 id="modalTitle">Add New Subject</h3>
+    <p class="hint">Customize subject title, review mode, and pick a logo.</p>
+
+    <div class="form-group">
+      <label>Subject Name</label>
+      <input type="text" id="subNameInput" placeholder="e.g. Mathematics">
+    </div>
+
+    <div class="form-group">
+      <label>Subtitle / Description</label>
+      <input type="text" id="subSubtitleInput" placeholder="e.g. Formula Quiz Wheel">
+    </div>
+
+    <div class="form-group">
+      <label>Logo Selection</label>
+      <select id="logoTypeSelect" onchange="toggleLogoSource()">
+        <option value="preset">Choose Preset Preset Logo</option>
+        <option value="upload">Upload Custom Image File</option>
+      </select>
+    </div>
+
+    <!-- Preset Icon Grid -->
+    <div id="presetSection">
+      <label style="font-size:12px; font-weight:bold; color:var(--navy);">Select Preset Icon</label>
+      <div class="preset-grid" id="presetGrid"></div>
+    </div>
+
+    <!-- Custom Image Upload -->
+    <div class="form-group" id="uploadSection" style="display:none; margin-top:10px;">
+      <label>Upload Image File</label>
+      <input type="file" id="subFileInput" accept="image/*" onchange="handleImageUpload(event)">
+    </div>
+
+    <button class="modal-close" style="background:var(--flame);" onclick="saveSubjectForm()">Save Subject</button>
+    <button class="modal-close" style="background:var(--muted); margin-top:8px;" onclick="closeSubjectModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- ============ ANSWER KEY MODAL ============ -->
+<div class="modal-backdrop" id="answerKeyModal">
+  <div class="modal-box">
+    <h3>Answer Key</h3>
+    <p class="hint" id="akHint">Items with an answer set will appear here.</p>
+    <div id="akList"></div>
+    <button class="modal-close" onclick="closeAnswerKey()">Close</button>
+  </div>
+</div>
+
+<script>
+/* Default preset subject logos */
+const presetLogos = ['🧠', '📐', '📚', '🧪', '🌍', '🎨', '⚽', '💻', '📜', '🎵', '🧬', '📊', '🏆', '⭐', '💡'];
+
+/* Default subjects dataset */
+const defaultSubjects = {
+  sample: {
+    name: 'Sample Subject',
+    subtitle: 'TRUE OR FALSE REVIEW',
+    icon: '🧠',
+    items: [
+      { text: 'Empathy builds relationships.', answer: 'True' },
+      { text: 'A triangle has 180 degrees.', answer: 'True' }
+    ]
+  }
+};
+
+let subjects = JSON.parse(localStorage.getItem('wheelSubjects')) || defaultSubjects;
+const palette = ['#F25C54','#F2A65A','#F2E863','#7ED957','#4CC9F0','#8367C7','#F25CB4','#5DDCA8','#FF8FA3','#B18AFF'];
+
+let activeKey = null;
+let editingSubjectKey = null;
+let selectedPresetIcon = '📚';
+let uploadedCustomIcon = '';
+let currentRotation = 0;
+let spinning = false;
+let lastPickIndex = null;
+let soundEnabled = true;
+
+/* Web Audio Synthesizer */
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function playClickSound(){
+  if(!soundEnabled) return;
+  try {
+    if(!audioCtx) audioCtx = new AudioContext();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.04);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.04);
+  } catch(e){}
+}
+
+function playWinSound(){
+  if(!soundEnabled) return;
+  try {
+    if(!audioCtx) audioCtx = new AudioContext();
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, idx) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx*0.08);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime + idx*0.08);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx*0.08 + 0.25);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime + idx*0.08);
+      osc.stop(audioCtx.currentTime + idx*0.08 + 0.25);
+    });
+  } catch(e){}
+}
+
+function toggleSound(){
+  soundEnabled = !soundEnabled;
+  document.getElementById('soundToggleBtn').textContent = soundEnabled ? '🔊' : '🔇';
+}
+
+function saveState(){
+  localStorage.setItem('wheelSubjects', JSON.stringify(subjects));
+}
+
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(()=> toast.classList.remove('show'), 2500);
+}
+
+function manualSave(){
+  saveState();
+  showToast('💾 Saved successfully!');
+}
+
+function uploadSchoolLogo(event){
+  const file = event.target.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      document.getElementById('schoolLogo').src = e.target.result;
+      localStorage.setItem('schoolLogoData', e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+if(localStorage.getItem('schoolLogoData')){
+  document.getElementById('schoolLogo').src = localStorage.getItem('schoolLogoData');
+}
+
+function initSubject(k){
+  if(!subjects[k].pool) subjects[k].pool = subjects[k].items.map((_,i)=>i);
+  if(!subjects[k].history) subjects[k].history = [];
+}
+Object.keys(subjects).forEach(initSubject);
+
+function state(){ return subjects[activeKey]; }
+
+/* Render subject list with Edit and Delete options */
+function renderSubjects(){
+  const grid = document.getElementById('subjectGrid');
+  grid.innerHTML = '';
+  Object.keys(subjects).forEach(key => {
+    const sub = subjects[key];
+    const card = document.createElement('div');
+    card.className = 'subject-card';
+
+    const btn = document.createElement('button');
+    btn.className = 'subject-btn';
+    btn.onclick = () => openSubject(key);
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'subject-icon';
+    iconSpan.innerHTML = (sub.icon.startsWith('data:') || sub.icon.startsWith('http')) 
+      ? `<img src="${sub.icon}" alt="logo">` 
+      : sub.icon;
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'subject-label';
+    labelSpan.innerHTML = `<b>${escapeHtml(sub.name)}</b><span>${escapeHtml(sub.subtitle)}</span>`;
+
+    btn.appendChild(iconSpan);
+    btn.appendChild(labelSpan);
+    card.appendChild(btn);
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    if(!isOfflineCopy()){
+      // Edit Button
+      const editBtn = document.createElement('button');
+      editBtn.className = 'subject-action-btn';
+      editBtn.innerHTML = '✏️';
+      editBtn.title = 'Edit Subject Details';
+      editBtn.onclick = (e) => {
+        e.stopPropagation();
+        openSubjectModal(key);
+      };
+
+      // Delete Button
+      const delBtn = document.createElement('button');
+      delBtn.className = 'subject-action-btn delete';
+      delBtn.innerHTML = '🗑️';
+      delBtn.title = 'Delete Subject';
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteSubject(key);
+      };
+
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+    }
+    card.appendChild(actions);
+
+    grid.appendChild(card);
+  });
+
+  // Hide "Add Subject" and general-settings gear entirely in offline copies —
+  // subject list and branding are locked snapshots once downloaded.
+  const addBtn = document.getElementById('addSubjectBtnWrap');
+  if(addBtn) addBtn.style.display = isOfflineCopy() ? 'none' : '';
+  const gear = document.querySelector('.home-gear');
+  if(gear) gear.style.display = isOfflineCopy() ? 'none' : '';
+}
+
+function deleteSubject(key){
+  if(confirm(`Are you sure you want to delete "${subjects[key].name}"?`)){
+    delete subjects[key];
+    saveState();
+    renderSubjects();
+  }
+}
+
+/* ---------------- Preset & Custom Logo Controls ---------------- */
+function renderPresets(){
+  const grid = document.getElementById('presetGrid');
+  grid.innerHTML = '';
+  presetLogos.forEach(logo => {
+    const item = document.createElement('div');
+    item.className = 'preset-item' + (selectedPresetIcon === logo ? ' selected' : '');
+    item.textContent = logo;
+    item.onclick = () => {
+      selectedPresetIcon = logo;
+      uploadedCustomIcon = '';
+      renderPresets();
+    };
+    grid.appendChild(item);
+  });
+}
+
+function toggleLogoSource(){
+  const type = document.getElementById('logoTypeSelect').value;
+  document.getElementById('presetSection').style.display = type === 'preset' ? 'block' : 'none';
+  document.getElementById('uploadSection').style.display = type === 'upload' ? 'block' : 'none';
+}
+
+function handleImageUpload(e){
+  const file = e.target.files[0];
+  if(file){
+    const reader = new FileReader();
+    reader.onload = function(evt){ uploadedCustomIcon = evt.target.result; };
+    reader.readAsDataURL(file);
+  }
+}
+
+function openSubjectModal(key = null){
+  editingSubjectKey = key;
+  renderPresets();
+
+  if(key && subjects[key]){
+    const sub = subjects[key];
+    document.getElementById('modalTitle').textContent = 'Edit Subject';
+    document.getElementById('subNameInput').value = sub.name;
+    document.getElementById('subSubtitleInput').value = sub.subtitle;
+
+    if(sub.icon.startsWith('data:') || sub.icon.startsWith('http')){
+      document.getElementById('logoTypeSelect').value = 'upload';
+      uploadedCustomIcon = sub.icon;
+    } else {
+      document.getElementById('logoTypeSelect').value = 'preset';
+      selectedPresetIcon = sub.icon;
+      renderPresets();
+    }
+  } else {
+    document.getElementById('modalTitle').textContent = 'Add New Subject';
+    document.getElementById('subNameInput').value = '';
+    document.getElementById('subSubtitleInput').value = '';
+    document.getElementById('logoTypeSelect').value = 'preset';
+    selectedPresetIcon = '📚';
+    uploadedCustomIcon = '';
+    renderPresets();
+  }
+
+  toggleLogoSource();
+  document.getElementById('subjectModal').classList.add('active');
+}
+
+function closeSubjectModal(){
+  document.getElementById('subjectModal').classList.remove('active');
+}
+
+function saveSubjectForm(){
+  const name = document.getElementById('subNameInput').value.trim();
+  const subtitle = document.getElementById('subSubtitleInput').value.trim() || 'REVIEW WHEEL';
+  const logoType = document.getElementById('logoTypeSelect').value;
+
+  if(!name){ alert('Please enter a subject name.'); return; }
+
+  let icon = '📚';
+  if(logoType === 'preset'){
+    icon = selectedPresetIcon;
+  } else if(logoType === 'upload'){
+    icon = uploadedCustomIcon || '📚';
+  }
+
+  if(editingSubjectKey){
+    subjects[editingSubjectKey].name = name;
+    subjects[editingSubjectKey].subtitle = subtitle;
+    subjects[editingSubjectKey].icon = icon;
+  } else {
+    const key = 'custom_' + Date.now();
+    subjects[key] = {
+      name: name,
+      subtitle: subtitle,
+      icon: icon,
+      items: [],
+      pool: [],
+      history: []
+    };
+  }
+
+  saveState();
+  renderSubjects();
+  closeSubjectModal();
+}
+
+/* ---------------- Navigation ---------------- */
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goHome(){ showView('view-home'); }
+
+function openSubject(key){
+  activeKey = key;
+  initSubject(key);
+  document.getElementById('wheelRibbon').textContent = subjects[key].name;
+  document.getElementById('wheelSubtitle').textContent = subjects[key].subtitle;
+  closeResultModal();
+  document.getElementById('answerLine').classList.remove('show');
+  renderHistory();
+  drawWheel();
+  updateStatus();
+  showView('view-wheel');
+}
+
+function openSettings(){
+  document.getElementById('settingsTitle').textContent = 'Edit Items — ' + state().name;
+  renderItemList();
+  showView('view-settings');
+}
+function closeSettings(){
+  drawWheel();
+  updateStatus();
+  showView('view-wheel');
+}
+
+/* ---------------- General Settings (Branding) ---------------- */
+function isOfflineCopy(){
+  return localStorage.getItem('stw_isOfflineCopy') === '1';
+}
+
+function openGeneralSettings(){
+  document.getElementById('gsSchoolName').value = localStorage.getItem('stw_schoolName') || document.getElementById('schoolNameDisplay').textContent;
+  document.getElementById('gsByline').value = localStorage.getItem('stw_byline') || document.getElementById('appBylineDisplay').textContent;
+  document.getElementById('gsMsg').textContent = '';
+  renderThemeGrid();
+
+  const offline = isOfflineCopy();
+  document.getElementById('offlineSectionBody').style.display = offline ? 'none' : '';
+  document.getElementById('offlineNotice').style.display = offline ? '' : 'none';
+  document.getElementById('offlineSectionTitle').style.display = offline ? 'none' : '';
+  document.getElementById('brandingSection').style.display = offline ? 'none' : '';
+  document.getElementById('themeSection').style.display = offline ? 'none' : '';
+  document.getElementById('offlineLockedNotice').style.display = offline ? '' : 'none';
+
+  const signedInEmail = localStorage.getItem('stw_remembered_email') || sessionStorage.getItem('stw_subscriber_email') || '';
+  document.getElementById('signedInAsText').textContent = signedInEmail ? ('Signed in as ' + signedInEmail + '.') : '';
+
+  showView('view-general');
+}
+function closeGeneralSettings(){ showView('view-home'); }
+
+function signOutDevice(){
+  if(isOfflineCopy()){
+    const proceed = confirm('This is an offline copy with no internet access. If you sign out, you will NOT be able to sign back in on this file without an internet connection. Continue anyway?');
+    if(!proceed) return;
+  }
+  localStorage.removeItem('stw_remembered');
+  localStorage.removeItem('stw_remembered_email');
+  sessionStorage.removeItem('stw_subscriber_ok');
+  sessionStorage.removeItem('stw_subscriber_email');
+  location.reload();
+}
+
+function saveGeneralSettings(){
+  const name = document.getElementById('gsSchoolName').value.trim();
+  const byline = document.getElementById('gsByline').value.trim();
+  if(name){ localStorage.setItem('stw_schoolName', name); document.getElementById('schoolNameDisplay').textContent = name; }
+  if(byline){ localStorage.setItem('stw_byline', byline); document.getElementById('appBylineDisplay').textContent = byline; }
+  const msg = document.getElementById('gsMsg');
+  msg.textContent = 'Saved!';
+  setTimeout(()=>{ msg.textContent = ''; }, 2000);
+}
+
+function applyBrandingFromStorage(){
+  const name = localStorage.getItem('stw_schoolName');
+  const byline = localStorage.getItem('stw_byline');
+  if(name) document.getElementById('schoolNameDisplay').textContent = name;
+  if(byline) document.getElementById('appBylineDisplay').textContent = byline;
+}
+
+/* ---------------- Theme Presets ---------------- */
+const THEMES = {
+  ocean:  { label:'Ocean',   navy:'#0F2A54', navyMid:'#17407A', flame:'#F2701D', flameLight:'#FFA552', purple:'#5B4B9E', swatch:'#0F2A54' },
+  forest: { label:'Forest',  navy:'#0F3D2A', navyMid:'#175A3F', flame:'#3FA34D', flameLight:'#66C97D', purple:'#2A7A5E', swatch:'#0F3D2A' },
+  sunset: { label:'Sunset',  navy:'#3B1F4D', navyMid:'#552B6E', flame:'#E14B4B', flameLight:'#FF7A7A', purple:'#5B4B9E', swatch:'#3B1F4D' },
+  crimson:{ label:'Crimson', navy:'#3A0F14', navyMid:'#5C1A22', flame:'#E14B4B', flameLight:'#FF7A6E', purple:'#8E3B4B', swatch:'#3A0F14' },
+  slate:  { label:'Slate',   navy:'#22283A', navyMid:'#333B55', flame:'#5B8AC9', flameLight:'#8AB4EA', purple:'#5B4B9E', swatch:'#22283A' },
+  gold:   { label:'Gold',    navy:'#1F1A0F', navyMid:'#3A2E17', flame:'#E0A72E', flameLight:'#F5C860', purple:'#8A6B2E', swatch:'#1F1A0F' }
+};
+
+function applyTheme(key){
+  const t = THEMES[key];
+  if(!t) return;
+  const root = document.documentElement.style;
+  root.setProperty('--navy', t.navy);
+  root.setProperty('--navy-mid', t.navyMid);
+  root.setProperty('--flame', t.flame);
+  root.setProperty('--flame-light', t.flameLight);
+  root.setProperty('--purple', t.purple);
+  localStorage.setItem('stw_theme', key);
+  renderThemeGrid();
+}
+
+function renderThemeGrid(){
+  const grid = document.getElementById('themeGrid');
+  if(!grid) return;
+  const current = localStorage.getItem('stw_theme') || 'ocean';
+  grid.innerHTML = '';
+  Object.keys(THEMES).forEach(key=>{
+    const t = THEMES[key];
+    const el = document.createElement('div');
+    el.className = 'theme-swatch' + (key === current ? ' selected' : '');
+    el.style.background = 'linear-gradient(135deg,' + t.navy + ',' + t.flame + ')';
+    el.title = t.label;
+    el.onclick = ()=> applyTheme(key);
+    el.innerHTML = (key === current ? '✓' : '') + '<span class="theme-swatch-label">' + t.label + '</span>';
+    grid.appendChild(el);
+  });
+}
+
+function applyThemeFromStorage(){
+  const key = localStorage.getItem('stw_theme');
+  if(key && THEMES[key]) applyTheme(key);
+}
+
+/* ---------------- Offline Download ---------------- */
+function downloadOfflineCopy(){
+  // Snapshot every relevant localStorage key so the downloaded file opens
+  // already customized (logo, subjects, branding, theme) — no re-setup needed.
+  const snapshot = {};
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    snapshot[k] = localStorage.getItem(k);
+  }
+  // Mark this exported copy as an offline copy so it won't offer "download offline" again.
+  snapshot['stw_isOfflineCopy'] = '1';
+  // Offline copies can't reach Supabase to re-verify, so bake in "remembered" status —
+  // this subscriber already proved who they are to generate this file. Skips login entirely.
+  snapshot['stw_remembered'] = '1';
+  snapshot['stw_remembered_email'] = sessionStorage.getItem('stw_subscriber_email') || localStorage.getItem('stw_remembered_email') || '';
+
+  const snapshotScript = '<script>(function(){var s=' + JSON.stringify(JSON.stringify(snapshot)) + ';' +
+    'try{var d=JSON.parse(s);Object.keys(d).forEach(function(k){localStorage.setItem(k,d[k]);});}catch(e){}' +
+    '})();</' + 'script>\n';
+
+  const htmlClone = document.documentElement.cloneNode(true);
+  const serialized = '<!DOCTYPE html>\n<html lang="en">\n' + htmlClone.innerHTML + '\n</html>';
+  const finalHtml = serialized.replace('<head>', '<head>\n' + snapshotScript);
+
+  const blob = new Blob([finalHtml], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const schoolName = (localStorage.getItem('stw_schoolName') || 'SpinTheWheel').replace(/[^a-z0-9]+/gi,'_');
+  a.download = schoolName + '_offline.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+
+/* ---------------- Excel Import / Export ---------------- */
+function exportToExcel(){
+  const s = state();
+  if(!s.items.length){ alert('No items to export.'); return; }
+  
+  if(window.XLSX){
+    const data = s.items.map((it, i) => ({ 'No.': i+1, 'Question/Item': it.text, 'Answer': it.answer || '' }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Question Bank");
+    XLSX.writeFile(wb, `${s.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_questions.xlsx`);
+  } else {
+    let csv = "Question,Answer\n";
+    s.items.forEach(it => { csv += `"${it.text.replace(/"/g, '""')}","${(it.answer||'').replace(/"/g, '""')}"\n`; });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${s.name}_questions.csv`;
+    link.click();
+  }
+}
+
+function importFromExcel(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+      
+      const newItems = [];
+      rows.forEach(row => {
+        const text = row['Question/Item'] || row['Question'] || row['item'] || row['Text'] || Object.values(row)[0];
+        const answer = row['Answer'] || row['answer'] || Object.values(row)[1] || '';
+        if(text) newItems.push({ text: String(text).trim(), answer: String(answer).trim() });
+      });
+
+      if(newItems.length){
+        state().items = newItems;
+        state().pool = newItems.map((_,i)=>i);
+        saveState();
+        renderItemList();
+        showToast(`📥 Imported ${newItems.length} items!`);
+      } else {
+        alert("Could not find valid question columns in file.");
+      }
+    } catch(err){
+      alert("Error reading Excel file: " + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ---------------- Wheel Canvas Drawing ---------------- */
+function colorFor(i){ return palette[i % palette.length]; }
+
+
+function drawWheel(){
+  const canvas = document.getElementById('wheel');
+  const ctx = canvas.getContext('2d');
+  const items = state().items;
+  const n = items.length;
+  const cx = canvas.width/2, cy = canvas.height/2, r = canvas.width/2 - 6;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if(n === 0){
+    ctx.fillStyle = '#e8e2cf';
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#8a7a1f';
+    ctx.font = 'bold 30px Trebuchet MS';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Add items in Settings', cx, cy);
+    return;
+  }
+
+  const seg = (Math.PI*2)/n;
+  const start = -Math.PI/2;
+  const fontSize = n > 16 ? 15 : n > 10 ? 19 : 24;
+  const numR = r - 34;
+
+  for(let i=0;i<n;i++){
+    const a0 = start + i*seg;
+    const a1 = a0 + seg;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a0,a1); ctx.closePath();
+    ctx.fillStyle = colorFor(i); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 2; ctx.stroke();
+
+    ctx.save();
+    ctx.translate(cx,cy); ctx.rotate(a0 + seg/2);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#132340';
+    ctx.font = 'bold ' + fontSize + 'px Trebuchet MS';
+    let label = items[i].text;
+    const maxChars = n > 16 ? 14 : 18;
+    if(label.length > maxChars) label = label.slice(0,maxChars-1) + '…';
+    ctx.fillText(label, r - 22, 0);
+    ctx.restore();
+
+    // Number Badge
+    const midAngle = a0 + seg/2;
+    const bx = cx + Math.cos(midAngle) * numR;
+    const by = cy + Math.sin(midAngle) * numR;
+    ctx.beginPath(); ctx.arc(bx,by, n>16?12:15, 0, Math.PI*2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.15)'; ctx.stroke();
+    ctx.fillStyle = '#132340';
+    ctx.font = 'bold ' + (n>16?11:13) + 'px Trebuchet MS';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(i+1), bx, by);
+  }
+}
+
+/* ---------------- Status & History ---------------- */
+function updateStatus(){
+  const s = state();
+  const spinBtn = document.getElementById('spinBtn');
+  const hub = document.getElementById('hub');
+  if(s.items.length < 2){
+    document.getElementById('status').textContent = 'Add at least 2 items in Settings to spin';
+    spinBtn.disabled = true; hub.style.pointerEvents='none';
+    return;
+  }
+  spinBtn.disabled = spinning;
+  hub.style.pointerEvents = spinning ? 'none' : 'auto';
+  document.getElementById('status').textContent = s.pool.length + ' of ' + s.items.length + ' items left in this round';
+}
+
+function addHistory(item){
+  const t = new Date();
+  state().history.unshift({text:item.text, time:t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})});
+  saveState();
+  renderHistory();
+}
+function renderHistory(){
+  const el = document.getElementById('historyList');
+  const h = state().history;
+  el.innerHTML = '';
+  if(!h || h.length === 0){ el.innerHTML = '<div style="opacity:.6">No spins yet</div>'; return; }
+  h.forEach(row=>{
+    const d = document.createElement('div');
+    d.innerHTML = '<span>' + escapeHtml(row.text) + '</span> — ' + row.time;
+    el.appendChild(d);
+  });
+}
+function clearHistoryFn(){ state().history = []; saveState(); renderHistory(); }
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+/* ---------------- Spin Execution ---------------- */
+function spin(){
+  const s = state();
+  if(spinning || s.items.length < 2) return;
+
+  if(s.pool.length === 0){ s.pool = s.items.map((_,i)=>i); }
+
+  spinning = true;
+  updateStatus();
+  closeResultModal();
+  document.getElementById('answerLine').classList.remove('show');
+
+  const pickPos = Math.floor(Math.random()*s.pool.length);
+  const targetIndex = s.pool[pickPos];
+  lastPickIndex = targetIndex;
+
+  const n = s.items.length;
+  const seg = 360/n;
+  const desiredMod = (360 - ((targetIndex + 0.5)*seg)) % 360;
+  const currentMod = ((currentRotation % 360)+360)%360;
+  let delta = desiredMod - currentMod;
+  if(delta <= 0) delta += 360;
+  const extraSpins = 6 + Math.floor(Math.random()*2);
+  currentRotation += delta + extraSpins*360;
+
+  // Sound Ticks Loop
+  let tickInterval = 60;
+  let elapsed = 0;
+  const soundTimer = setInterval(() => {
+    elapsed += tickInterval;
+    playClickSound();
+    if(elapsed >= 4200){ clearInterval(soundTimer); }
+    if(elapsed > 2800) tickInterval = 140;
+  }, tickInterval);
+
+  document.getElementById('wheel').style.transform = 'rotate(' + currentRotation + 'deg)';
+
+  setTimeout(()=>{
+    s.pool = s.pool.filter(idx => idx !== targetIndex);
+    spinning = false;
+    playWinSound();
+    const item = s.items[targetIndex];
+    document.getElementById('resultNum').textContent = '#' + (targetIndex+1);
+    document.getElementById('resultValue').textContent = item.text;
+    document.getElementById('revealBtn').style.display = item.answer ? 'inline-block' : 'none';
+    openResultModal();
+    addHistory(item);
+    updateStatus();
+  }, 4300);
+}
+
+function openResultModal(){
+  document.getElementById('resultModal').classList.add('active');
+}
+function closeResultModal(){
+  document.getElementById('resultModal').classList.remove('active');
+}
+
+function revealAnswer(){
+  const item = state().items[lastPickIndex];
+  if(!item) return;
+  const line = document.getElementById('answerLine');
+  line.textContent = 'Answer: ' + item.answer;
+  line.classList.add('show');
+}
+
+function resetPool(){
+  state().pool = state().items.map((_,i)=>i);
+  saveState();
+  updateStatus();
+  showToast('Round reset successfully!');
+}
+
+/* ---------------- Settings Management ---------------- */
+function renderItemList(){
+  const s = state();
+  const wrap = document.getElementById('itemList');
+  wrap.innerHTML = '';
+  s.items.forEach((item, i)=>{
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    const num = document.createElement('div');
+    num.className = 'item-num';
+    num.textContent = i+1;
+    row.appendChild(num);
+
+    const fields = document.createElement('div');
+    fields.className = 'item-fields';
+
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.value = item.text;
+    textInput.maxLength = 80;
+    textInput.addEventListener('input', ()=>{ item.text = textInput.value; saveState(); });
+    fields.appendChild(textInput);
+
+    const answerInput = document.createElement('input');
+    answerInput.type = 'text';
+    answerInput.className = 'answer-input';
+    answerInput.placeholder = 'Answer (optional)';
+    answerInput.value = item.answer || '';
+    answerInput.maxLength = 60;
+    answerInput.addEventListener('input', ()=>{ item.answer = answerInput.value; saveState(); });
+    fields.appendChild(answerInput);
+
+    row.appendChild(fields);
+
+    const del = document.createElement('button');
+    del.className = 'remove-btn';
+    del.textContent = '✕';
+    del.title = 'Remove item';
+    del.addEventListener('click', ()=>{
+      s.items.splice(i,1);
+      s.pool = s.items.map((_,idx)=>idx);
+      saveState();
+      renderItemList();
+    });
+    row.appendChild(del);
+
+    wrap.appendChild(row);
+  });
+}
+
+function addItem(){
+  const s = state();
+  const textEl = document.getElementById('newItemText');
+  const ansEl = document.getElementById('newItemAnswer');
+  const text = textEl.value.trim();
+  if(!text) return;
+  s.items.push({text: text, answer: ansEl.value.trim()});
+  s.pool = s.items.map((_,idx)=>idx);
+  saveState();
+  textEl.value = ''; ansEl.value = '';
+  renderItemList();
+}
+
+/* ---------------- Answer Key Modal ---------------- */
+function openAnswerKey(){
+  const s = state();
+  const list = document.getElementById('akList');
+  list.innerHTML = '';
+  const withAnswers = s.items.map((it,i)=>({it,i})).filter(o=>o.it.answer);
+  document.getElementById('akHint').textContent =
+    withAnswers.length ? ('Answer key for ' + s.name + '.') : 'No answers set for this subject yet. Add them in Settings.';
+  withAnswers.forEach(o=>{
+    const row = document.createElement('div');
+    row.className = 'ak-row';
+    row.innerHTML = '<div class="ak-num">'+(o.i+1)+'</div><div class="ak-text">'+escapeHtml(o.it.text)+'</div><div class="ak-answer">'+escapeHtml(o.it.answer)+'</div>';
+    list.appendChild(row);
+  });
+  document.getElementById('answerKeyModal').classList.add('active');
+}
+function closeAnswerKey(){ document.getElementById('answerKeyModal').classList.remove('active'); }
+
+/* ---------------- Subscriber Sign-In (email + unique per-subscriber PIN) ---------------- */
+// Safe to expose publicly: the anon key only allows calling verify_subscriber(),
+// a narrow function that returns true/false — it can never read, list, or edit the table,
+// and it never reveals whether the email or the PIN was the one that was wrong.
+const SUPABASE_URL = 'https://sffhchsnwmmwnvpdqjwj.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZmhjaHNud21td252cGRxandqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3MDE1NDEsImV4cCI6MjEwMTI3NzU0MX0.WnEQewxKoQVksiZJzPbdQ71gq8-NwwnjEnNzo_pnCx8';
+
+const EMAIL_MAX_ATTEMPTS = 8;
+const EMAIL_LOCKOUT_MS = 60000;
+const PIN_MAX_ATTEMPTS = 5;
+const PIN_LOCKOUT_MS = 60000;
+
+let pendingEmail = '';
+
+function emailLockoutRemainingMs(){
+  const until = parseInt(localStorage.getItem('stw_email_lock_until') || '0', 10);
+  return Math.max(0, until - Date.now());
+}
+function pinLockoutRemainingMs(){
+  const until = parseInt(localStorage.getItem('stw_pin_lock_until') || '0', 10);
+  return Math.max(0, until - Date.now());
+}
+
+function setEmailMsg(text, ok){
+  const el = document.getElementById('emailMsg');
+  el.textContent = text;
+  el.className = 'ec-msg' + (ok ? ' ok' : '');
+}
+function setLockMsg(text, ok){
+  const el = document.getElementById('lockMsg');
+  el.textContent = text;
+  el.className = 'lock-msg' + (ok ? ' ok' : '');
+}
+
+function refreshEmailUI(){
+  const remaining = emailLockoutRemainingMs();
+  const btn = document.getElementById('emailSubmitBtn');
+  const input = document.getElementById('emailInput');
+  if(remaining > 0){
+    btn.disabled = true; input.disabled = true;
+    setEmailMsg('Too many attempts. Try again in ' + Math.ceil(remaining/1000) + 's.', false);
+    setTimeout(refreshEmailUI, 1000);
+  } else {
+    btn.disabled = false; input.disabled = false;
+  }
+}
+function refreshLockUI(){
+  const remaining = pinLockoutRemainingMs();
+  const btn = document.getElementById('pinSubmitBtn');
+  const input = document.getElementById('pinInput');
+  if(remaining > 0){
+    btn.disabled = true; input.disabled = true;
+    setLockMsg('Too many attempts. Try again in ' + Math.ceil(remaining/1000) + 's.', false);
+    setTimeout(refreshLockUI, 1000);
+  } else {
+    btn.disabled = false; input.disabled = false;
+    if(!btn.disabled) input.focus();
+  }
+}
+
+// Step 1: check the email. If this subscriber is active and has never claimed a PIN,
+// the server generates one on the spot and hands it back — shown once on screen.
+// Otherwise, move to the normal "enter your existing PIN" screen.
+async function attemptEmailCheck(){
+  if(emailLockoutRemainingMs() > 0){ refreshEmailUI(); return; }
+  const input = document.getElementById('emailInput');
+  const email = input.value.trim().toLowerCase();
+  if(!email || !email.includes('@')){ setEmailMsg('Enter a valid email address.', false); return; }
+  pendingEmail = email;
+
+  // Basic rate limit on this step (not tied to right/wrong, since claim_or_check_pin
+  // intentionally never reveals that) — just blunts casual mass-scanning of emails.
+  const calls = (parseInt(localStorage.getItem('stw_email_call_count') || '0', 10)) + 1;
+  localStorage.setItem('stw_email_call_count', String(calls));
+  if(calls >= EMAIL_MAX_ATTEMPTS){
+    localStorage.setItem('stw_email_lock_until', String(Date.now() + EMAIL_LOCKOUT_MS));
+    localStorage.removeItem('stw_email_call_count');
+    refreshEmailUI();
+    return;
+  }
+
+  const btn = document.getElementById('emailSubmitBtn');
+  btn.disabled = true;
+  setEmailMsg('Checking...', false);
+
+  try{
+    const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/claim_or_check_pin', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ check_email: email })
+    });
+    const data = await res.json();
+    btn.disabled = false;
+    setEmailMsg('', false);
+
+    if(data && data.status === 'new_pin'){
+      showNewPinScreen(data.pin);
+    } else {
+      goToLockScreen();
+    }
+  } catch(e){
+    btn.disabled = false;
+    setEmailMsg('Connection error. Check your internet and try again.', false);
+  }
+}
+
+function showNewPinScreen(pin){
+  document.getElementById('view-emailcheck').classList.remove('active');
+  document.getElementById('newPinDisplay').textContent = pin;
+  document.getElementById('newPinRememberCheckbox').checked = false;
+  document.getElementById('view-newpin').classList.add('active');
+}
+
+function confirmNewPin(){
+  const remember = document.getElementById('newPinRememberCheckbox').checked;
+  if(remember){
+    localStorage.setItem('stw_remembered', '1');
+    localStorage.setItem('stw_remembered_email', pendingEmail);
+  }
+  sessionStorage.setItem('stw_subscriber_ok', '1');
+  sessionStorage.setItem('stw_subscriber_email', pendingEmail);
+  document.getElementById('view-newpin').classList.remove('active');
+  unlockApp();
+}
+
+function goToLockScreen(){
+  document.getElementById('view-emailcheck').classList.remove('active');
+  document.getElementById('view-lock').classList.add('active');
+  document.getElementById('pinScreenEmail').textContent = 'Signing in as ' + pendingEmail;
+  document.getElementById('pinInput').value = '';
+  setLockMsg('', false);
+  refreshLockUI();
+}
+
+function backToEmailScreen(){
+  pendingEmail = '';
+  document.getElementById('view-lock').classList.remove('active');
+  document.getElementById('view-emailcheck').classList.add('active');
+  refreshEmailUI();
+}
+
+// Step 2: verify email + PIN together against Supabase in one call.
+async function attemptUnlock(){
+  if(pinLockoutRemainingMs() > 0){ refreshLockUI(); return; }
+
+  const input = document.getElementById('pinInput');
+  const pin = input.value;
+  if(!pin){ setLockMsg('Enter your PIN.', false); return; }
+
+  const btn = document.getElementById('pinSubmitBtn');
+  btn.disabled = true;
+  setLockMsg('Checking...', false);
+
+  try{
+    const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/verify_subscriber', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ check_email: pendingEmail, check_pin: pin })
+    });
+    const ok = await res.json();
+
+    if(ok === true){
+      localStorage.removeItem('stw_email_fail_count');
+      localStorage.removeItem('stw_email_lock_until');
+      localStorage.removeItem('stw_pin_fail_count');
+      localStorage.removeItem('stw_pin_lock_until');
+
+      const remember = document.getElementById('rememberMeCheckbox').checked;
+      if(remember){
+        localStorage.setItem('stw_remembered', '1');
+        localStorage.setItem('stw_remembered_email', pendingEmail);
+      }
+      sessionStorage.setItem('stw_subscriber_ok', '1');
+      sessionStorage.setItem('stw_subscriber_email', pendingEmail);
+
+      setLockMsg('Unlocked!', true);
+      unlockApp();
+    } else {
+      input.value = '';
+      const fails = (parseInt(localStorage.getItem('stw_pin_fail_count') || '0', 10)) + 1;
+      localStorage.setItem('stw_pin_fail_count', String(fails));
+      if(fails >= PIN_MAX_ATTEMPTS){
+        localStorage.setItem('stw_pin_lock_until', String(Date.now() + PIN_LOCKOUT_MS));
+        localStorage.removeItem('stw_pin_fail_count');
+        refreshLockUI();
+      } else {
+        setLockMsg('Incorrect email or PIN. ' + (PIN_MAX_ATTEMPTS - fails) + ' attempt(s) left.', false);
+        btn.disabled = false;
+      }
+    }
+  } catch(e){
+    setLockMsg('Connection error. Check your internet and try again.', false);
+    btn.disabled = false;
+  }
+}
+
+function unlockApp(){
+  localStorage.removeItem('stw_email_call_count');
+  document.getElementById('view-emailcheck').classList.remove('active');
+  document.getElementById('view-newpin').classList.remove('active');
+  document.getElementById('view-lock').classList.remove('active');
+  document.getElementById('view-home').classList.add('active');
+  applyBrandingFromStorage();
+  renderSubjects();
+}
+
+document.getElementById('emailInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') attemptEmailCheck();
+});
+document.getElementById('pinInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') attemptUnlock();
+});
+
+// Apply saved theme immediately (even on the sign-in screens) and saved branding text.
+applyThemeFromStorage();
+applyBrandingFromStorage();
+
+// On load: figure out which screen to show —
+// 1) Remembered on this device (persists across restarts, and is what makes the
+//    offline download skip login entirely, since it has no internet to re-verify) -> straight to app
+// 2) Verified earlier this browser session (didn't check "remember") -> straight to app
+// 3) Neither -> email screen (default active view already set in HTML)
+if(localStorage.getItem('stw_remembered') === '1'){
+  unlockApp();
+} else if(sessionStorage.getItem('stw_subscriber_ok') === '1'){
+  unlockApp();
+} else {
+  refreshEmailUI();
+}
+
+
+</script>
+</body>
+</html>

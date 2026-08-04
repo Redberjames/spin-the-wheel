@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Subscriber Admin — Spin The Wheel</title>
+<style>
+  :root{
+    --navy:#0F2A54; --navy-mid:#17407A; --flame:#F2701D; --flame-light:#FFA552; --purple:#5B4B9E;
+    --ink:#0c1b33; --muted:#8a99c0; --ok:#a6e6b0; --bad:#ffb3b3;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; background:linear-gradient(160deg,var(--navy),var(--ink));
+    font-family:'Trebuchet MS','Segoe UI',Verdana,sans-serif; color:#fff;
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:32px 20px 80px; }
+
+  /* Login gate */
+  #loginView{ min-height:90vh; display:flex; align-items:center; justify-content:center; }
+  .login-box{
+    width:100%; max-width:360px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);
+    border-radius:18px; padding:34px 28px; text-align:center; box-shadow:0 14px 30px rgba(0,0,0,.4);
+  }
+  .login-icon{
+    width:60px; height:60px; margin:0 auto 14px; border-radius:50%;
+    background:linear-gradient(135deg,var(--purple),#3d2f78); display:flex; align-items:center;
+    justify-content:center; font-size:26px;
+  }
+  .login-box h1{ font-size:19px; margin:0 0 4px; }
+  .login-box p{ font-size:13px; color:var(--muted); margin:0 0 20px; }
+  input[type=password], input[type=text], input[type=email], select{
+    width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.07); color:#fff; font-size:14px; font-family:inherit; outline:none;
+  }
+  input:focus, select:focus{ border-color:var(--flame); }
+  .btn{
+    border:none; border-radius:999px; font-weight:bold; letter-spacing:.4px; text-transform:uppercase;
+    font-size:12.5px; cursor:pointer; color:#fff; padding:12px 18px;
+    background:linear-gradient(180deg,var(--flame-light),var(--flame)); box-shadow:0 4px 0 #b5540f;
+  }
+  .btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #b5540f; }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-full{ width:100%; margin-top:14px; }
+  .msg{ font-size:12.5px; margin-top:10px; min-height:14px; color:var(--bad); }
+  .msg.ok{ color:var(--ok); }
+
+  /* Dashboard */
+  #dashView{ display:none; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:10px; }
+  .topbar h1{ font-size:20px; margin:0; letter-spacing:.3px; }
+  .topbar .sub{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .btn-ghost{
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18); color:#fff;
+    border-radius:999px; padding:9px 16px; font-size:12px; cursor:pointer; text-transform:uppercase;
+    letter-spacing:.4px; font-weight:bold;
+  }
+  .btn-ghost:hover{ background:rgba(255,255,255,.15); }
+
+  .stats-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:24px; }
+  .stat-card{
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:14px;
+    padding:16px; text-align:center;
+  }
+  .stat-num{ font-size:26px; font-weight:bold; color:var(--flame-light); }
+  .stat-label{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }
+
+  .card{
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:16px;
+    padding:22px; margin-bottom:22px;
+  }
+  .card h2{ margin:0 0 4px; font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:var(--flame-light); }
+  .card p.hint{ margin:0 0 16px; font-size:12.5px; color:var(--muted); }
+
+  .add-form{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start; }
+  .add-form input{ flex:1; min-width:200px; }
+  .add-form select{ width:140px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th{ text-align:left; padding:10px 8px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid rgba(255,255,255,.12); }
+  td{ padding:10px 8px; border-bottom:1px solid rgba(255,255,255,.06); vertical-align:middle; }
+  tr:last-child td{ border-bottom:none; }
+  .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:.3px; }
+  .badge.active{ background:rgba(166,230,176,.15); color:var(--ok); }
+  .badge.other{ background:rgba(255,179,179,.15); color:var(--bad); }
+  .row-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .mini-btn{
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#fff;
+    border-radius:8px; padding:5px 9px; font-size:11px; cursor:pointer;
+  }
+  .mini-btn:hover{ background:rgba(255,255,255,.16); }
+  .mini-btn.danger{ border-color:rgba(255,179,179,.4); color:var(--bad); }
+  .empty-note{ color:var(--muted); font-size:13px; text-align:center; padding:20px 0; }
+  .table-scroll{ overflow-x:auto; }
+</style>
+</head>
+<body>
+
+<!-- Login Gate -->
+<div id="loginView">
+  <div class="login-box">
+    <div class="login-icon">🛡️</div>
+    <h1>Admin Access</h1>
+    <p>Enter your admin secret to manage subscribers</p>
+    <input type="password" id="adminSecretInput" placeholder="Admin secret" autocomplete="off">
+    <button class="btn btn-full" id="loginBtn" onclick="attemptLogin()">Sign In</button>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashView">
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Subscriber Admin</h1>
+        <div class="sub">Spin The Wheel · manage who can access the app</div>
+      </div>
+      <button class="btn-ghost" onclick="signOutAdmin()">Sign Out</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="statTotal">–</div><div class="stat-label">Total Subscribers</div></div>
+      <div class="stat-card"><div class="stat-num" id="statActive">–</div><div class="stat-label">Active</div></div>
+      <div class="stat-card"><div class="stat-num" id="statPending">–</div><div class="stat-label">Awaiting First Login</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Add Subscriber</h2>
+      <p class="hint">They'll get a unique PIN automatically the first time they log in with this email.</p>
+      <div class="add-form">
+        <input type="email" id="newSubEmail" placeholder="subscriber@example.com">
+        <select id="newSubPlan">
+          <option value="monthly">Monthly</option>
+          <option value="one-time">One-time</option>
+          <option value="yearly">Yearly</option>
+        </select>
+        <button class="btn" onclick="addSubscriber()" id="addBtn">+ Add</button>
+      </div>
+      <div class="msg" id="addMsg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Subscribers</h2>
+      <p class="hint">Deactivate to revoke access without deleting their history. Reset PIN if they lost it.</p>
+      <div class="table-scroll">
+        <table id="subTable">
+          <thead>
+            <tr><th>Email</th><th>Status</th><th>Plan</th><th>Added</th><th>PIN</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="subTableBody"></tbody>
+        </table>
+        <div class="empty-note" id="emptyNote" style="display:none;">No subscribers yet — add your first one above.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://sffhchsnwmmwnvpdqjwj.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZmhjaHNud21td252cGRxandqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3MDE1NDEsImV4cCI6MjEwMTI3NzU0MX0.WnEQewxKoQVksiZJzPbdQ71gq8-NwwnjEnNzo_pnCx8';
+
+let adminSecret = '';
+
+async function callAdminRpc(fn, body){
+  const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    const errText = await res.text();
+    throw new Error(errText);
+  }
+  return res.json();
+}
+
+async function attemptLogin(){
+  const input = document.getElementById('adminSecretInput');
+  const secret = input.value.trim();
+  if(!secret){ setLoginMsg('Enter your admin secret.', false); return; }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  setLoginMsg('Checking...', false);
+
+  try{
+    // Validate by attempting a harmless list call — wrong secret throws.
+    await callAdminRpc('admin_list_subscribers', { admin_secret: secret });
+    adminSecret = secret;
+    sessionStorage.setItem('stw_admin_secret', secret);
+    showDashboard();
+  } catch(e){
+    setLoginMsg('Incorrect admin secret.', false);
+    btn.disabled = false;
+  }
+}
+
+function setLoginMsg(text, ok){
+  const el = document.getElementById('loginMsg');
+  el.textContent = text;
+  el.className = 'msg' + (ok ? ' ok' : '');
+}
+
+document.getElementById('adminSecretInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') attemptLogin();
+});
+
+function signOutAdmin(){
+  adminSecret = '';
+  sessionStorage.removeItem('stw_admin_secret');
+  document.getElementById('dashView').style.display = 'none';
+  document.getElementById('loginView').style.display = 'flex';
+  document.getElementById('adminSecretInput').value = '';
+  document.getElementById('loginBtn').disabled = false;
+  setLoginMsg('', false);
+}
+
+function showDashboard(){
+  document.getElementById('loginView').style.display = 'none';
+  document.getElementById('dashView').style.display = 'block';
+  loadSubscribers();
+}
+
+async function loadSubscribers(){
+  try{
+    const rows = await callAdminRpc('admin_list_subscribers', { admin_secret: adminSecret });
+    renderTable(rows || []);
+  } catch(e){
+    document.getElementById('subTableBody').innerHTML = '';
+    document.getElementById('emptyNote').style.display = 'block';
+    document.getElementById('emptyNote').textContent = 'Could not load subscribers. Try refreshing.';
+  }
+}
+
+function renderTable(rows){
+  const tbody = document.getElementById('subTableBody');
+  const emptyNote = document.getElementById('emptyNote');
+  tbody.innerHTML = '';
+
+  document.getElementById('statTotal').textContent = rows.length;
+  document.getElementById('statActive').textContent = rows.filter(r => r.status === 'active').length;
+  document.getElementById('statPending').textContent = rows.filter(r => r.status === 'active' && !r.has_pin).length;
+
+  if(rows.length === 0){
+    emptyNote.style.display = 'block';
+    emptyNote.textContent = 'No subscribers yet — add your first one above.';
+    return;
+  }
+  emptyNote.style.display = 'none';
+
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+
+    const addedDate = r.added_at ? new Date(r.added_at).toLocaleDateString() : '—';
+    const badgeClass = r.status === 'active' ? 'active' : 'other';
+    const pinText = r.has_pin ? 'Claimed' : 'Not yet';
+
+    tr.innerHTML = `
+      <td>${escapeHtml(r.email)}</td>
+      <td><span class="badge ${badgeClass}">${escapeHtml(r.status || '—')}</span></td>
+      <td>${escapeHtml(r.plan || '—')}</td>
+      <td>${addedDate}</td>
+      <td>${pinText}</td>
+    `;
+
+    const actionsTd = document.createElement('td');
+    const actionsWrap = document.createElement('div');
+    actionsWrap.className = 'row-actions';
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'mini-btn';
+    toggleBtn.textContent = r.status === 'active' ? 'Deactivate' : 'Activate';
+    toggleBtn.onclick = () => setStatus(r.email, r.status === 'active' ? 'expired' : 'active');
+    actionsWrap.appendChild(toggleBtn);
+
+    if(r.has_pin){
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'mini-btn';
+      resetBtn.textContent = 'Reset PIN';
+      resetBtn.onclick = () => resetPin(r.email);
+      actionsWrap.appendChild(resetBtn);
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'mini-btn danger';
+    delBtn.textContent = 'Delete';
+    delBtn.onclick = () => deleteSubscriber(r.email);
+    actionsWrap.appendChild(delBtn);
+
+    actionsTd.appendChild(actionsWrap);
+    tr.appendChild(actionsTd);
+    tbody.appendChild(tr);
+  });
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+async function addSubscriber(){
+  const emailInput = document.getElementById('newSubEmail');
+  const planSelect = document.getElementById('newSubPlan');
+  const email = emailInput.value.trim().toLowerCase();
+  const plan = planSelect.value;
+  const msg = document.getElementById('addMsg');
+
+  if(!email || !email.includes('@')){ msg.textContent = 'Enter a valid email.'; msg.className = 'msg'; return; }
+
+  const btn = document.getElementById('addBtn');
+  btn.disabled = true;
+  msg.textContent = 'Adding...'; msg.className = 'msg';
+
+  try{
+    const result = await callAdminRpc('admin_add_subscriber', { admin_secret: adminSecret, new_email: email, new_plan: plan });
+    if(result && result.success){
+      msg.textContent = 'Added! They can now log in and claim their PIN.';
+      msg.className = 'msg ok';
+      emailInput.value = '';
+      loadSubscribers();
+    } else {
+      msg.textContent = (result && result.error) || 'Something went wrong.';
+      msg.className = 'msg';
+    }
+  } catch(e){
+    msg.textContent = 'Connection error. Try again.';
+    msg.className = 'msg';
+  }
+  btn.disabled = false;
+}
+
+async function setStatus(email, newStatus){
+  try{
+    await callAdminRpc('admin_set_status', { admin_secret: adminSecret, target_email: email, new_status: newStatus });
+    loadSubscribers();
+  } catch(e){
+    alert('Could not update status. Try again.');
+  }
+}
+
+async function resetPin(email){
+  if(!confirm('Reset the PIN for ' + email + '? They will get a new PIN shown on screen next time they log in.')) return;
+  try{
+    await callAdminRpc('admin_reset_pin', { admin_secret: adminSecret, target_email: email });
+    loadSubscribers();
+  } catch(e){
+    alert('Could not reset PIN. Try again.');
+  }
+}
+
+async function deleteSubscriber(email){
+  if(!confirm('Permanently delete ' + email + '? This cannot be undone.')) return;
+  try{
+    await callAdminRpc('admin_delete_subscriber', { admin_secret: adminSecret, target_email: email });
+    loadSubscribers();
+  } catch(e){
+    alert('Could not delete subscriber. Try again.');
+  }
+}
+
+// Auto sign-in if this browser tab already authenticated this session.
+const savedSecret = sessionStorage.getItem('stw_admin_secret');
+if(savedSecret){
+  adminSecret = savedSecret;
+  showDashboard();
+}
+</script>
+</body>
+</html>
