@@ -594,6 +594,12 @@
       <div class="theme-grid" id="themeGrid"></div>
     </div>
 
+    <div class="gs-section-title">Sound Effects</div>
+    <div class="add-row" style="align-items:center;">
+      <p class="hint" style="margin:0; flex:1;">Spin, tick, and win sounds during gameplay.</p>
+      <button class="gs-secondary-btn" id="soundToggleBtn" onclick="toggleSound()" style="width:auto; margin-top:0; white-space:nowrap;">🔊 On</button>
+    </div>
+
     <div class="gs-section-title" id="offlineSectionTitle">Offline Copy</div>
     <div id="offlineSectionBody">
       <p class="hint" style="margin-bottom:10px;">Download a self-contained copy of this app — with your current logo, subjects, branding, and theme baked in — that works fully offline on any device.</p>
@@ -613,7 +619,6 @@
     <button class="icon-btn" onclick="goHome()" title="Back to subjects">←</button>
     <div class="topbar-actions">
       <button class="icon-btn" id="scoreboardBtn" onclick="openScoreboard()" title="Scoreboard" style="display:none;">🏆</button>
-      <button class="icon-btn" id="soundToggleBtn" onclick="toggleSound()" title="Toggle Sound Effects">🔊</button>
       <button class="icon-btn" onclick="openAnswerKey()" title="Answer key">📋</button>
       <button class="icon-btn" onclick="openSettings()" title="Settings">⚙</button>
     </div>
@@ -758,6 +763,11 @@
         <input type="text" id="newParticipantName" placeholder="Student/participant name…" maxlength="60">
         <button onclick="addParticipant()">+ Add name</button>
       </div>
+
+      <div class="save-bar">
+        <button class="primary-save-btn" onclick="manualSaveParticipants()">💾 Save Changes</button>
+      </div>
+
       <div class="controls-row" style="margin-top:10px;">
         <button class="ghost-btn" onclick="resetParticipantPool()">Reset draw (unmark drawn)</button>
         <button class="ghost-btn" onclick="confirmResetScores()">Reset scores</button>
@@ -855,7 +865,7 @@ let uploadedCustomIcon = '';
 let currentRotation = 0;
 let spinning = false;
 let lastPickIndex = null;
-let soundEnabled = true;
+let soundEnabled = localStorage.getItem('stw_soundEnabled') !== '0';
 
 /* Web Audio Synthesizer */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -901,7 +911,13 @@ function playWinSound(){
 
 function toggleSound(){
   soundEnabled = !soundEnabled;
-  document.getElementById('soundToggleBtn').textContent = soundEnabled ? '🔊' : '🔇';
+  localStorage.setItem('stw_soundEnabled', soundEnabled ? '1' : '0');
+  updateSoundToggleBtn();
+}
+
+function updateSoundToggleBtn(){
+  const btn = document.getElementById('soundToggleBtn');
+  if(btn) btn.textContent = soundEnabled ? '🔊 On' : '🔇 Off';
 }
 
 function saveState(){
@@ -918,6 +934,12 @@ function showToast(msg){
 function manualSave(){
   saveState();
   showToast('💾 Saved successfully!');
+}
+
+function manualSaveParticipants(){
+  saveState();
+  renderParticipantList();
+  showToast('💾 Participant list saved!');
 }
 
 function uploadSchoolLogo(event){
@@ -944,9 +966,11 @@ function removeSchoolLogo(){
   setTimeout(()=>{ msg.textContent = ''; }, 2000);
 }
 
-if(localStorage.getItem('schoolLogoData')){
-  document.getElementById('schoolLogo').src = localStorage.getItem('schoolLogoData');
-}
+try {
+  if(localStorage.getItem('schoolLogoData')){
+    document.getElementById('schoolLogo').src = localStorage.getItem('schoolLogoData');
+  }
+} catch(e){ console.error('Logo init failed:', e); }
 
 function initSubject(k){
   if(!subjects[k].pool) subjects[k].pool = subjects[k].items.map((_,i)=>i);
@@ -981,8 +1005,7 @@ function renderSubjects(){
 
     const labelSpan = document.createElement('span');
     labelSpan.className = 'subject-label';
-    const badge = sub.participantsEnabled ? ' <span class="participant-badge">👥 Draws Names</span>' : '';
-    labelSpan.innerHTML = `<b>${escapeHtml(sub.name)}</b><span>${escapeHtml(sub.subtitle)}${badge}</span>`;
+    labelSpan.innerHTML = `<b>${escapeHtml(sub.name)}</b><span>${escapeHtml(sub.subtitle)}</span>`;
 
     btn.appendChild(iconSpan);
     btn.appendChild(labelSpan);
@@ -990,6 +1013,18 @@ function renderSubjects(){
 
     const actions = document.createElement('div');
     actions.className = 'card-actions';
+
+    if(sub.participantsEnabled){
+      const peopleBtn = document.createElement('button');
+      peopleBtn.className = 'subject-action-btn';
+      peopleBtn.innerHTML = '👥';
+      peopleBtn.title = 'Manage Participants';
+      peopleBtn.onclick = (e) => {
+        e.stopPropagation();
+        openParticipantsQuickAccess(key);
+      };
+      actions.appendChild(peopleBtn);
+    }
 
     if(!isOfflineCopy()){
       // Edit Button
@@ -1169,6 +1204,13 @@ function showView(id){
 }
 function goHome(){ showView('view-home'); }
 
+function openParticipantsQuickAccess(key){
+  activeKey = key;
+  initSubject(key);
+  openSettings();
+  switchSettingsTab('participants');
+}
+
 function openSubject(key){
   activeKey = key;
   initSubject(key);
@@ -1230,6 +1272,7 @@ function openGeneralSettings(){
   document.getElementById('gsByline').value = localStorage.getItem('stw_byline') || document.getElementById('appBylineDisplay').textContent;
   document.getElementById('gsMsg').textContent = '';
   renderThemeGrid();
+  updateSoundToggleBtn();
 
   const offline = isOfflineCopy();
   document.getElementById('offlineSectionBody').style.display = offline ? 'none' : '';
@@ -1695,17 +1738,22 @@ function resetPool(){
 let drawnParticipantName = null;
 
 function openDrawView(){
-  const s = state();
-  document.getElementById('revealModal').classList.remove('active');
-  document.getElementById('drawBtn').disabled = false;
+  try {
+    const s = state();
+    document.getElementById('revealModal').classList.remove('active');
+    document.getElementById('drawBtn').disabled = false;
 
-  const hasParticipants = s.participants.length > 0;
-  document.getElementById('drawEmptyState').style.display = hasParticipants ? 'none' : '';
-  document.getElementById('drawCageWrap').style.display = hasParticipants ? '' : 'none';
+    const hasParticipants = s.participants.length > 0;
+    document.getElementById('drawEmptyState').style.display = hasParticipants ? 'none' : '';
+    document.getElementById('drawCageWrap').style.display = hasParticipants ? '' : 'none';
 
-  updateDrawSub();
-  if(hasParticipants) buildCageBalls();
-  showView('view-draw');
+    updateDrawSub();
+    if(hasParticipants) buildCageBalls();
+    showView('view-draw');
+  } catch(e){
+    console.error('openDrawView failed:', e);
+    alert('Could not open the name draw screen. Error: ' + e.message);
+  }
 }
 
 function updateDrawSub(){
@@ -1752,18 +1800,24 @@ function drawParticipant(){
   if(typeof playClickSound === 'function') playClickSound();
 
   setTimeout(()=>{
-    const pickPos = Math.floor(Math.random()*s.participantPool.length);
-    const idx = s.participantPool[pickPos];
-    s.participantPool.splice(pickPos,1);
-    drawnParticipantName = s.participants[idx].name;
-    saveState();
+    try {
+      const pickPos = Math.floor(Math.random()*s.participantPool.length);
+      const idx = s.participantPool[pickPos];
+      s.participantPool.splice(pickPos,1);
+      drawnParticipantName = s.participants[idx].name;
+      saveState();
 
-    document.getElementById('revealName').textContent = drawnParticipantName;
-    document.getElementById('revealModal').classList.add('active');
-    if(typeof playWinSound === 'function') playWinSound();
-    updateDrawSub();
-    buildCageBalls();
-    btn.disabled = false;
+      document.getElementById('revealName').textContent = drawnParticipantName;
+      document.getElementById('revealModal').classList.add('active');
+      if(typeof playWinSound === 'function') playWinSound();
+      updateDrawSub();
+      buildCageBalls();
+      btn.disabled = false;
+    } catch(e){
+      console.error('drawParticipant reveal failed:', e);
+      alert('Something went wrong drawing a name. Error: ' + e.message);
+      btn.disabled = false;
+    }
   }, 1800);
 }
 
@@ -2251,20 +2305,25 @@ document.getElementById('pinInput').addEventListener('keydown', (e)=>{
 });
 
 // Apply saved theme immediately (even on the sign-in screens) and saved branding text.
-applyThemeFromStorage();
-applyBrandingFromStorage();
+try {
+  applyThemeFromStorage();
+  applyBrandingFromStorage();
 
-// On load: figure out which screen to show —
-// 1) Remembered on this device (persists across restarts, and is what makes the
-//    offline download skip login entirely, since it has no internet to re-verify) -> straight to app
-// 2) Verified earlier this browser session (didn't check "remember") -> straight to app
-// 3) Neither -> email screen (default active view already set in HTML)
-if(localStorage.getItem('stw_remembered') === '1'){
-  unlockApp();
-} else if(sessionStorage.getItem('stw_subscriber_ok') === '1'){
-  unlockApp();
-} else {
-  refreshEmailUI();
+  // On load: figure out which screen to show —
+  // 1) Remembered on this device (persists across restarts, and is what makes the
+  //    offline download skip login entirely, since it has no internet to re-verify) -> straight to app
+  // 2) Verified earlier this browser session (didn't check "remember") -> straight to app
+  // 3) Neither -> email screen (default active view already set in HTML)
+  if(localStorage.getItem('stw_remembered') === '1'){
+    unlockApp();
+  } else if(sessionStorage.getItem('stw_subscriber_ok') === '1'){
+    unlockApp();
+  } else {
+    refreshEmailUI();
+  }
+} catch(e){
+  console.error('App init failed:', e);
+  alert('Something went wrong loading the app. Please refresh, or contact support if this keeps happening.\n\nError: ' + e.message);
 }
 
 
