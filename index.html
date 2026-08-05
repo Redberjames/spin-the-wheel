@@ -348,6 +348,22 @@
   .score-name{ flex:1; text-align:left; padding:0 8px; }
   .score-points{ font-weight:bold; }
 
+  /* ---------------- Countdown Timer Badge (on result popup) ---------------- */
+  .timer-badge{ position:absolute; top:12px; right:12px; width:52px; height:52px; }
+  .timer-ring-svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .timer-ring-bg{ fill:none; stroke:rgba(0,0,0,.12); stroke-width:5; }
+  .timer-ring-fg{
+    fill:none; stroke:#3FA34D; stroke-width:5; stroke-linecap:round;
+    stroke-dasharray:163.36; stroke-dashoffset:0;
+    transition:stroke-dashoffset 1s linear, stroke .3s ease;
+  }
+  .timer-badge-num{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:bold; color:var(--ink);
+  }
+  .timer-badge.time-up .timer-badge-num{ color:#D9432B; animation:timerPulse .6s ease infinite; font-size:20px; }
+  @keyframes timerPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.2); } }
+
   @keyframes confettiFall{
     0%{ transform:translate(-50%,-50%) translate(0,0) rotate(0deg); opacity:1; }
     100%{ transform:translate(-50%,-50%) translate(var(--drift), 220px) rotate(var(--rot)); opacity:0; }
@@ -673,7 +689,15 @@
 
 <!-- Result Popup -->
 <div class="modal-backdrop" id="resultModal">
-  <div class="modal-box" style="text-align:center;">
+  <div class="modal-box" style="text-align:center; position:relative;">
+    <div class="timer-badge" id="timerBadge" style="display:none;">
+      <svg viewBox="0 0 60 60" class="timer-ring-svg">
+        <circle cx="30" cy="30" r="26" class="timer-ring-bg"/>
+        <circle cx="30" cy="30" r="26" class="timer-ring-fg" id="timerRingFg"/>
+      </svg>
+      <div class="timer-badge-num" id="timerBadgeNum">15</div>
+    </div>
+
     <div class="result-num" id="resultNum" style="font-size:14px; font-weight:bold; letter-spacing:1px; color:var(--muted); text-transform:uppercase;">#</div>
     <div class="result-value" id="resultValue" style="font-size:20px; font-weight:bold; margin:8px 0 16px;">—</div>
     <button class="reveal-btn" id="revealBtn" onclick="revealAnswer()">Show answer</button>
@@ -768,7 +792,18 @@
         <button class="primary-save-btn" onclick="manualSave()">💾 Save Changes</button>
       </div>
 
-      <div class="controls-row">
+      <div class="gs-section-title" style="margin-top:22px;">⏱ Countdown Timer</div>
+      <p class="hint" style="margin-bottom:10px;">Shows a countdown next to the question after each spin — great for timed review games.</p>
+      <label class="remember-row" style="justify-content:flex-start; margin-bottom:10px;">
+        <input type="checkbox" id="timerEnabledInput" onchange="saveTimerSettings()">
+        <span>Enable countdown timer</span>
+      </label>
+      <div class="add-row" id="timerSecondsRow" style="display:none; align-items:center;">
+        <label for="timerSecondsInput" style="font-size:13px; color:#c8d3ea; white-space:nowrap;">Seconds:</label>
+        <input type="number" id="timerSecondsInput" min="3" max="300" value="15" style="max-width:90px;" onchange="saveTimerSettings()">
+      </div>
+
+      <div class="controls-row" style="margin-top:20px;">
         <button class="ghost-btn" onclick="resetPool()">Reset round (unmark used)</button>
         <button class="ghost-btn" onclick="clearHistoryFn()">Clear history</button>
       </div>
@@ -971,6 +1006,21 @@ function manualSaveParticipants(){
   showToast('💾 Participant list saved!');
 }
 
+function saveTimerSettings(){
+  const s = state();
+  const enabled = document.getElementById('timerEnabledInput').checked;
+  let seconds = parseInt(document.getElementById('timerSecondsInput').value, 10);
+  if(isNaN(seconds) || seconds < 3) seconds = 3;
+  if(seconds > 300) seconds = 300;
+  document.getElementById('timerSecondsInput').value = seconds;
+
+  s.timerEnabled = enabled;
+  s.timerSeconds = seconds;
+  document.getElementById('timerSecondsRow').style.display = enabled ? 'flex' : 'none';
+  saveState();
+  showToast(enabled ? ('⏱ Timer set to ' + seconds + 's') : '⏱ Timer disabled');
+}
+
 function uploadSchoolLogo(event){
   if(isOfflineCopy()) return; // locked in offline copies
   const file = event.target.files[0];
@@ -1008,6 +1058,8 @@ function initSubject(k){
   if(!subjects[k].participants) subjects[k].participants = [];
   if(!subjects[k].participantPool) subjects[k].participantPool = subjects[k].participants.map((_,i)=>i);
   if(!subjects[k].scores) subjects[k].scores = {};
+  if(subjects[k].timerEnabled === undefined) subjects[k].timerEnabled = false;
+  if(!subjects[k].timerSeconds) subjects[k].timerSeconds = 15;
 }
 Object.keys(subjects).forEach(initSubject);
 
@@ -1217,7 +1269,9 @@ function saveSubjectForm(){
       participantsEnabled: document.getElementById('participantsToggleInput').checked,
       participants: [],
       participantPool: [],
-      scores: {}
+      scores: {},
+      timerEnabled: false,
+      timerSeconds: 15
     };
   }
 
@@ -1269,6 +1323,12 @@ function openSettings(){
   renderItemList();
   renderParticipantList();
   document.getElementById('tabParticipantsBtn').style.display = state().participantsEnabled ? '' : 'none';
+
+  const s = state();
+  document.getElementById('timerEnabledInput').checked = !!s.timerEnabled;
+  document.getElementById('timerSecondsInput').value = s.timerSeconds || 15;
+  document.getElementById('timerSecondsRow').style.display = s.timerEnabled ? 'flex' : 'none';
+
   switchSettingsTab('questions');
   showView('view-settings');
 }
@@ -1764,6 +1824,9 @@ function spin(){
     document.getElementById('revealBtn').style.display = item.answer ? 'inline-block' : 'none';
     document.getElementById('scoringRow').style.display = drawnParticipantName ? 'flex' : 'none';
     openResultModal();
+    if(s.timerEnabled && s.timerSeconds > 0){
+      startResultTimer(s.timerSeconds);
+    }
     addHistory(item);
     updateStatus();
   }, 4300);
@@ -1774,6 +1837,47 @@ function openResultModal(){
 }
 function closeResultModal(){
   document.getElementById('resultModal').classList.remove('active');
+  stopResultTimer();
+}
+
+/* ---------------- Countdown Timer (per-subject, shown on the question popup) ---------------- */
+let resultTimerInterval = null;
+const TIMER_RING_CIRCUMFERENCE = 163.36;
+
+function startResultTimer(totalSeconds){
+  stopResultTimer();
+  const badge = document.getElementById('timerBadge');
+  const numEl = document.getElementById('timerBadgeNum');
+  const ringFg = document.getElementById('timerRingFg');
+
+  badge.style.display = 'block';
+  badge.classList.remove('time-up');
+  ringFg.style.stroke = '#3FA34D';
+  ringFg.style.strokeDashoffset = 0;
+  numEl.textContent = totalSeconds;
+
+  let remaining = totalSeconds;
+  resultTimerInterval = setInterval(() => {
+    remaining--;
+    if(remaining < 0){
+      clearInterval(resultTimerInterval);
+      resultTimerInterval = null;
+      numEl.textContent = '⏰';
+      badge.classList.add('time-up');
+      if(typeof playClickSound === 'function') playClickSound();
+      return;
+    }
+    numEl.textContent = remaining;
+    const fraction = remaining / totalSeconds;
+    ringFg.style.strokeDashoffset = (TIMER_RING_CIRCUMFERENCE * (1 - fraction)).toFixed(1);
+    ringFg.style.stroke = fraction <= 0.25 ? '#D9432B' : fraction <= 0.5 ? '#E0A72E' : '#3FA34D';
+  }, 1000);
+}
+
+function stopResultTimer(){
+  if(resultTimerInterval){ clearInterval(resultTimerInterval); resultTimerInterval = null; }
+  const badge = document.getElementById('timerBadge');
+  if(badge){ badge.style.display = 'none'; badge.classList.remove('time-up'); }
 }
 
 function revealAnswer(){
