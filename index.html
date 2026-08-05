@@ -98,6 +98,10 @@
   .subject-icon img{ width:100%; height:100%; object-fit:cover; }
   .subject-label b{ display:block; font-size:16px; }
   .subject-label span{ display:block; font-size:12px; opacity:.85; margin-top:2px; }
+  .participant-badge{
+    display:inline-block !important; margin-top:4px !important; padding:2px 8px; border-radius:999px;
+    background:rgba(242,112,29,.25); color:#ffcfa3; font-size:10px; font-weight:bold; opacity:1 !important;
+  }
 
   .card-actions {
     display: flex; gap: 6px; align-items: center;
@@ -317,6 +321,11 @@
   .score-name{ flex:1; text-align:left; padding:0 8px; }
   .score-points{ font-weight:bold; }
 
+  @keyframes confettiFall{
+    0%{ transform:translate(-50%,-50%) translate(0,0) rotate(0deg); opacity:1; }
+    100%{ transform:translate(-50%,-50%) translate(var(--drift), 220px) rotate(var(--rot)); opacity:0; }
+  }
+
   /* ---------------- SUBSCRIBER EMAIL CHECK ---------------- */
   #view-emailcheck{ justify-content:center; align-items:center; padding:40px 20px; text-align:center; }
   #emailInput{
@@ -378,6 +387,17 @@
   /* ---------------- SETTINGS VIEW ---------------- */
   #view-settings{ padding:24px 16px 60px; width:100%; max-width:560px; margin:0 auto; align-items:center; }
   .settings-panel{ width:100%; background:#1f1846; border-radius:16px; padding:22px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+
+  .settings-tabs{ display:flex; gap:8px; margin-bottom:18px; }
+  .settings-tab{
+    flex:1; padding:11px; border-radius:10px; border:1.5px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.05); color:#c8d3ea; font-weight:bold; font-size:13px;
+    cursor:pointer; font-family:inherit;
+  }
+  .settings-tab.active{ background:var(--flame); border-color:var(--flame); color:#fff; }
+
+  .danger-btn{ border-color:rgba(255,120,120,.4) !important; color:#ffb3b3 !important; }
+  .danger-btn:hover{ background:rgba(255,120,120,.12) !important; }
   .settings-panel h2{ margin:0 0 4px; font-size:16px; letter-spacing:1px; text-transform:uppercase; color:var(--flame-light); }
   .settings-panel p.hint{ margin:0 0 16px; font-size:13px; color:#a89fce; }
 
@@ -552,7 +572,7 @@
 
     <div id="brandingSection">
       <div class="gs-field">
-        <label for="gsSchoolName">School Name</label>
+        <label for="gsSchoolName">School/Company Name</label>
         <input type="text" id="gsSchoolName" placeholder="e.g. Name of School/Name of Company">
       </div>
       <div class="gs-field">
@@ -643,21 +663,32 @@
     <div class="draw-title outline-text" id="drawTitle">Draw a Name</div>
     <div class="draw-sub" id="drawSub">—</div>
 
-    <div class="cage-scene">
-      <div class="cage-sphere" id="cageSphere"></div>
-      <div class="cage-glow"></div>
-      <div class="cage-shadow"></div>
+    <div id="drawEmptyState" style="display:none; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:26px 20px; margin-bottom:10px;">
+      <div style="font-size:32px; margin-bottom:8px;">👥</div>
+      <p class="hint" style="margin-bottom:14px;">No participants added yet for this subject.</p>
+      <button class="lock-submit" onclick="goToParticipantsSettings()">+ Add Names Now</button>
     </div>
 
-    <button class="hub draw-btn" id="drawBtn" onclick="drawParticipant()">🎱<br>DRAW</button>
+    <div id="drawCageWrap">
+      <div class="cage-scene">
+        <div class="cage-sphere" id="cageSphere"></div>
+        <div class="cage-glow"></div>
+        <div class="cage-shadow"></div>
+      </div>
 
-    <div class="reveal-card" id="revealCard">
-      <div class="reveal-label">Now Answering</div>
-      <div class="reveal-name" id="revealName">—</div>
-      <button class="lock-submit" onclick="continueToWheelAfterDraw()">Continue to Question →</button>
+      <button class="hub draw-btn" id="drawBtn" onclick="drawParticipant()">🎱<br>DRAW</button>
     </div>
 
     <button class="ghost-btn" style="margin-top:18px;" onclick="skipDrawToWheel()">Skip — spin without drawing</button>
+  </div>
+</div>
+
+<!-- Name Reveal Popup -->
+<div class="modal-backdrop" id="revealModal">
+  <div class="modal-box" style="text-align:center;">
+    <div class="reveal-label">Now Answering</div>
+    <div class="reveal-name" id="revealName">—</div>
+    <button class="lock-submit" onclick="continueToWheelAfterDraw()">Continue to Question →</button>
   </div>
 </div>
 
@@ -668,7 +699,8 @@
     <h2>🏆 Scoreboard</h2>
     <p class="hint" id="scoreboardSubtitle">Scores for this subject.</p>
     <div id="scoreboardList"></div>
-    <button class="ghost-btn" style="width:100%; margin-top:16px;" onclick="confirmResetScores()">Reset scores</button>
+    <button class="tool-btn" style="width:100%; margin-top:14px;" onclick="exportScoresToExcel()">📤 Download Scores (Excel)</button>
+    <button class="ghost-btn" style="width:100%; margin-top:10px;" onclick="confirmResetScores()">Reset scores</button>
   </div>
 </div>
 
@@ -676,35 +708,51 @@
 <div class="view" id="view-settings">
   <button class="back-link" onclick="closeSettings()">← Back to wheel</button>
   <div class="settings-panel">
-    <h2 id="settingsTitle">Edit Items</h2>
-    <p class="hint">Edit question bank text and answers. Import/Export via Excel below.</p>
-
-    <!-- Excel Tools -->
-    <div class="excel-tools">
-      <button class="tool-btn" onclick="exportToExcel()">📤 Export (Excel)</button>
-      <button class="tool-btn" onclick="document.getElementById('excelFileInput').click();">📥 Import (Excel)</button>
-      <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importFromExcel(event)">
+    <div class="settings-tabs" id="settingsTabs">
+      <button class="settings-tab active" id="tabQuestionsBtn" onclick="switchSettingsTab('questions')">📝 Questions</button>
+      <button class="settings-tab" id="tabParticipantsBtn" onclick="switchSettingsTab('participants')" style="display:none;">👥 Participants</button>
     </div>
 
-    <div id="itemList"></div>
-    <div class="add-row">
-      <input type="text" id="newItemText" placeholder="New question/item text…" maxlength="80">
-      <input type="text" id="newItemAnswer" placeholder="Answer (optional)…" maxlength="60">
-      <button onclick="addItem()">+ Add item</button>
+    <div id="questionsTabPanel">
+      <h2 id="settingsTitle">Edit Items</h2>
+      <p class="hint">Edit question bank text and answers. Import/Export via Excel below.</p>
+
+      <div class="excel-tools">
+        <button class="tool-btn" onclick="exportToExcel()">📤 Export (Excel)</button>
+        <button class="tool-btn" onclick="document.getElementById('excelFileInput').click();">📥 Import (Excel)</button>
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importFromExcel(event)">
+      </div>
+
+      <div id="itemList"></div>
+      <div class="add-row">
+        <input type="text" id="newItemText" placeholder="New question/item text…" maxlength="80">
+        <input type="text" id="newItemAnswer" placeholder="Answer (optional)…" maxlength="60">
+        <button onclick="addItem()">+ Add item</button>
+      </div>
+
+      <div class="save-bar">
+        <button class="primary-save-btn" onclick="manualSave()">💾 Save Changes</button>
+      </div>
+
+      <div class="controls-row">
+        <button class="ghost-btn" onclick="resetPool()">Reset round (unmark used)</button>
+        <button class="ghost-btn" onclick="clearHistoryFn()">Clear history</button>
+      </div>
+      <div class="controls-row" style="margin-top:8px;">
+        <button class="ghost-btn danger-btn" onclick="confirmClearAllItems()">🗑 Clear all questions</button>
+      </div>
     </div>
 
-    <div class="save-bar">
-      <button class="primary-save-btn" onclick="manualSave()">💾 Save Changes</button>
-    </div>
-
-    <div class="controls-row">
-      <button class="ghost-btn" onclick="resetPool()">Reset round (unmark used)</button>
-      <button class="ghost-btn" onclick="clearHistoryFn()">Clear history</button>
-    </div>
-
-    <div id="participantsSection" style="display:none; margin-top:26px; padding-top:20px; border-top:1px solid rgba(255,255,255,.1);">
+    <div id="participantsTabPanel" style="display:none;">
       <h2>Participants</h2>
       <p class="hint">Names get drawn one at a time before each question. Scores are tracked automatically.</p>
+
+      <div class="excel-tools">
+        <button class="tool-btn" onclick="exportParticipantsToExcel()">📤 Export (Excel)</button>
+        <button class="tool-btn" onclick="document.getElementById('participantsExcelFileInput').click();">📥 Import (Excel)</button>
+        <input type="file" id="participantsExcelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importParticipantsFromExcel(event)">
+      </div>
+
       <div id="participantList"></div>
       <div class="add-row">
         <input type="text" id="newParticipantName" placeholder="Student/participant name…" maxlength="60">
@@ -713,6 +761,9 @@
       <div class="controls-row" style="margin-top:10px;">
         <button class="ghost-btn" onclick="resetParticipantPool()">Reset draw (unmark drawn)</button>
         <button class="ghost-btn" onclick="confirmResetScores()">Reset scores</button>
+      </div>
+      <div class="controls-row" style="margin-top:8px;">
+        <button class="ghost-btn danger-btn" onclick="confirmClearAllParticipants()">🗑 Clear all participants</button>
       </div>
     </div>
   </div>
@@ -930,7 +981,8 @@ function renderSubjects(){
 
     const labelSpan = document.createElement('span');
     labelSpan.className = 'subject-label';
-    labelSpan.innerHTML = `<b>${escapeHtml(sub.name)}</b><span>${escapeHtml(sub.subtitle)}</span>`;
+    const badge = sub.participantsEnabled ? ' <span class="participant-badge">👥 Draws Names</span>' : '';
+    labelSpan.innerHTML = `<b>${escapeHtml(sub.name)}</b><span>${escapeHtml(sub.subtitle)}${badge}</span>`;
 
     btn.appendChild(iconSpan);
     btn.appendChild(labelSpan);
@@ -1145,12 +1197,27 @@ function openSettings(){
   document.getElementById('settingsTitle').textContent = 'Edit Items — ' + state().name;
   renderItemList();
   renderParticipantList();
+  document.getElementById('tabParticipantsBtn').style.display = state().participantsEnabled ? '' : 'none';
+  switchSettingsTab('questions');
   showView('view-settings');
 }
 function closeSettings(){
   drawWheel();
   updateStatus();
   showView('view-wheel');
+}
+
+function switchSettingsTab(tab){
+  const isParticipants = tab === 'participants';
+  document.getElementById('questionsTabPanel').style.display = isParticipants ? 'none' : '';
+  document.getElementById('participantsTabPanel').style.display = isParticipants ? '' : 'none';
+  document.getElementById('tabQuestionsBtn').classList.toggle('active', !isParticipants);
+  document.getElementById('tabParticipantsBtn').classList.toggle('active', isParticipants);
+}
+
+function goToParticipantsSettings(){
+  openSettings();
+  switchSettingsTab('participants');
 }
 
 /* ---------------- General Settings (Branding) ---------------- */
@@ -1383,6 +1450,79 @@ function importFromExcel(e){
   reader.readAsArrayBuffer(file);
 }
 
+function confirmClearAllItems(){
+  if(!confirm('Delete ALL questions for "' + state().name + '"? This cannot be undone.')) return;
+  const s = state();
+  s.items = [];
+  s.pool = [];
+  saveState();
+  renderItemList();
+  drawWheel();
+  updateStatus();
+  showToast('All questions cleared.');
+}
+
+/* ---------------- Participants Excel Export/Import ---------------- */
+function exportParticipantsToExcel(){
+  const s = state();
+  if(!s.participants.length){ alert('No participants to export.'); return; }
+
+  const data = s.participants.map((p, i) => ({ 'No.': i+1, 'Name': p.name }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Participants");
+  XLSX.writeFile(wb, `${s.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_participants.xlsx`);
+}
+
+function importParticipantsFromExcel(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+
+      const newParticipants = [];
+      rows.forEach(row => {
+        const keys = Object.keys(row);
+        let name = row['Name'] ?? row['name'] ?? row['Student'] ?? row['Participant'];
+        if(name === undefined && keys.length > 0) name = row[keys[keys.length > 1 ? 1 : 0]];
+        if(name !== undefined && name !== null && String(name).trim() !== ''){
+          newParticipants.push({ name: String(name).trim() });
+        }
+      });
+
+      if(newParticipants.length){
+        state().participants = newParticipants;
+        state().participantPool = newParticipants.map((_,i)=>i);
+        saveState();
+        renderParticipantList();
+        showToast(`📥 Imported ${newParticipants.length} participants!`);
+      } else {
+        alert("Could not find valid name column in file.");
+      }
+    } catch(err){
+      alert("Error reading Excel file: " + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function confirmClearAllParticipants(){
+  if(!confirm('Delete ALL participants and their scores for "' + state().name + '"? This cannot be undone.')) return;
+  const s = state();
+  s.participants = [];
+  s.participantPool = [];
+  s.scores = {};
+  saveState();
+  renderParticipantList();
+  showToast('All participants cleared.');
+}
+
 /* ---------------- Wheel Canvas Drawing ---------------- */
 function colorFor(i){ return palette[i % palette.length]; }
 
@@ -1556,10 +1696,15 @@ let drawnParticipantName = null;
 
 function openDrawView(){
   const s = state();
-  document.getElementById('revealCard').classList.remove('show');
+  document.getElementById('revealModal').classList.remove('active');
   document.getElementById('drawBtn').disabled = false;
+
+  const hasParticipants = s.participants.length > 0;
+  document.getElementById('drawEmptyState').style.display = hasParticipants ? 'none' : '';
+  document.getElementById('drawCageWrap').style.display = hasParticipants ? '' : 'none';
+
   updateDrawSub();
-  buildCageBalls();
+  if(hasParticipants) buildCageBalls();
   showView('view-draw');
 }
 
@@ -1593,12 +1738,12 @@ function buildCageBalls(){
 
 function drawParticipant(){
   const s = state();
-  if(!s.participants.length){ alert('Add participants first from Settings (⚙).'); return; }
+  if(!s.participants.length){ goToParticipantsSettings(); return; }
   if(s.participantPool.length === 0){ s.participantPool = s.participants.map((_,i)=>i); }
 
   const btn = document.getElementById('drawBtn');
   btn.disabled = true;
-  document.getElementById('revealCard').classList.remove('show');
+  document.getElementById('revealModal').classList.remove('active');
 
   const sphere = document.getElementById('cageSphere');
   sphere.classList.remove('tumbling');
@@ -1614,7 +1759,7 @@ function drawParticipant(){
     saveState();
 
     document.getElementById('revealName').textContent = drawnParticipantName;
-    document.getElementById('revealCard').classList.add('show');
+    document.getElementById('revealModal').classList.add('active');
     if(typeof playWinSound === 'function') playWinSound();
     updateDrawSub();
     buildCageBalls();
@@ -1623,6 +1768,7 @@ function drawParticipant(){
 }
 
 function continueToWheelAfterDraw(){
+  document.getElementById('revealModal').classList.remove('active');
   const banner = document.getElementById('wheelParticipantBanner');
   banner.textContent = 'Now answering: ' + drawnParticipantName;
   banner.style.display = '';
@@ -1640,7 +1786,10 @@ function markAnswer(isCorrect){
   const s = state();
   if(drawnParticipantName){
     if(!s.scores[drawnParticipantName]) s.scores[drawnParticipantName] = 0;
-    if(isCorrect) s.scores[drawnParticipantName] += 1;
+    if(isCorrect){
+      s.scores[drawnParticipantName] += 1;
+      launchConfetti();
+    }
     saveState();
     showToast(isCorrect ? (drawnParticipantName + ' scores a point!') : 'Marked — no point this round.');
   }
@@ -1651,6 +1800,30 @@ function markAnswer(isCorrect){
     document.getElementById('wheelParticipantBanner').style.display = 'none';
     openDrawView();
   }
+}
+
+function launchConfetti(){
+  const colors = ['#F2701D','#FFA552','#7ED957','#4CC9F0','#8367C7','#F25CB4'];
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed; inset:0; pointer-events:none; z-index:200; overflow:hidden;';
+  document.body.appendChild(container);
+
+  for(let i=0;i<28;i++){
+    const piece = document.createElement('div');
+    const size = 6 + Math.random()*6;
+    const startX = 50 + (Math.random()*20-10);
+    const drift = (Math.random()*160-80);
+    const duration = 900 + Math.random()*700;
+    const rotation = Math.random()*720 - 360;
+    piece.style.cssText =
+      'position:absolute; top:38%; left:' + startX + '%; width:' + size + 'px; height:' + (size*0.6) + 'px;' +
+      'background:' + colors[i % colors.length] + '; opacity:.95; border-radius:2px;' +
+      'transform:translate(-50%,-50%) rotate(0deg);' +
+      'animation:confettiFall ' + duration + 'ms cubic-bezier(.15,.6,.4,1) forwards;' +
+      '--drift:' + drift + 'px; --rot:' + rotation + 'deg;';
+    container.appendChild(piece);
+  }
+  setTimeout(()=>{ container.remove(); }, 1700);
 }
 
 /* ---------------- Scoreboard ---------------- */
@@ -1684,6 +1857,21 @@ function renderScoreboard(){
       '<div class="score-points">' + e.score + ' pt' + (e.score===1?'':'s') + '</div>';
     list.appendChild(row);
   });
+}
+
+function exportScoresToExcel(){
+  const s = state();
+  if(!s.participants.length){ alert('No participants/scores to export yet.'); return; }
+
+  const entries = s.participants.map(p => ({ name: p.name, score: s.scores[p.name] || 0 }));
+  entries.sort((a,b) => b.score - a.score);
+
+  const data = entries.map((e, i) => ({ 'Rank': i+1, 'Name': e.name, 'Score': e.score }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Scores");
+  const dateStr = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `${s.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_scores_${dateStr}.xlsx`);
 }
 
 /* ---------------- Settings Management ---------------- */
@@ -1753,10 +1941,6 @@ function addItem(){
 /* ---------------- Participants Management ---------------- */
 function renderParticipantList(){
   const s = state();
-  const section = document.getElementById('participantsSection');
-  section.style.display = s.participantsEnabled ? '' : 'none';
-  if(!s.participantsEnabled) return;
-
   const wrap = document.getElementById('participantList');
   wrap.innerHTML = '';
   s.participants.forEach((p, i)=>{
