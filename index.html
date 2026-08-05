@@ -297,20 +297,14 @@
 
   .cage-sphere{
     position:absolute; inset:0; transform-style:preserve-3d;
-    animation:cageIdle 16s linear infinite;
-  }
-  .cage-sphere.tumbling{ animation:cageTumble 1.8s cubic-bezier(.25,.85,.35,1) forwards; }
-  @keyframes cageIdle{ from{ transform:rotateY(0deg) rotateX(10deg); } to{ transform:rotateY(360deg) rotateX(10deg); } }
-  @keyframes cageTumble{
-    0%{ transform:rotateY(0deg) rotateX(10deg) rotateZ(0deg); }
-    55%{ transform:rotateY(1080deg) rotateX(420deg) rotateZ(240deg); }
-    100%{ transform:rotateY(1440deg) rotateX(730deg) rotateZ(360deg); }
   }
   .cage-ball{
     position:absolute; top:50%; left:50%; width:38px; height:38px; margin:-19px 0 0 -19px;
     border-radius:50%;
+    --ball-color: var(--flame);
+    background: radial-gradient(circle at 30% 24%, #fff 0%, rgba(255,255,255,.9) 8%, var(--ball-color) 42%, #333 100%);
     background:
-      radial-gradient(circle at 30% 24%, #fff 0%, rgba(255,255,255,.9) 8%, var(--flame-light) 38%, var(--flame) 72%, #b5540f 100%);
+      radial-gradient(circle at 30% 24%, #fff 0%, rgba(255,255,255,.9) 8%, var(--ball-color) 42%, color-mix(in srgb, var(--ball-color) 65%, black) 100%);
     box-shadow:
       inset -6px -8px 10px rgba(0,0,0,.35),
       inset 4px 4px 6px rgba(255,255,255,.5),
@@ -1237,7 +1231,7 @@ function showView(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-function goHome(){ showView('view-home'); }
+function goHome(){ stopCageIdleLoop(); showView('view-home'); }
 
 function openParticipantsQuickAccess(key){
   activeKey = key;
@@ -1359,12 +1353,10 @@ function applyBrandingFromStorage(){
 
 /* ---------------- Theme Presets ---------------- */
 const THEMES = {
-  ocean:  { label:'Ocean',   navy:'#0F2A54', navyMid:'#17407A', flame:'#F2701D', flameLight:'#FFA552', purple:'#5B4B9E', swatch:'#0F2A54' },
-  forest: { label:'Forest',  navy:'#0F3D2A', navyMid:'#175A3F', flame:'#3FA34D', flameLight:'#66C97D', purple:'#2A7A5E', swatch:'#0F3D2A' },
-  sunset: { label:'Sunset',  navy:'#3B1F4D', navyMid:'#552B6E', flame:'#E14B4B', flameLight:'#FF7A7A', purple:'#5B4B9E', swatch:'#3B1F4D' },
-  crimson:{ label:'Crimson', navy:'#3A0F14', navyMid:'#5C1A22', flame:'#E14B4B', flameLight:'#FF7A6E', purple:'#8E3B4B', swatch:'#3A0F14' },
-  slate:  { label:'Slate',   navy:'#22283A', navyMid:'#333B55', flame:'#5B8AC9', flameLight:'#8AB4EA', purple:'#5B4B9E', swatch:'#22283A' },
-  gold:   { label:'Gold',    navy:'#1F1A0F', navyMid:'#3A2E17', flame:'#E0A72E', flameLight:'#F5C860', purple:'#8A6B2E', swatch:'#1F1A0F' }
+  water: { label:'💧 Water', navy:'#0B2A4A', navyMid:'#134066', flame:'#2FA8D9', flameLight:'#7FD4F2', purple:'#1C6E8C', swatch:'#0B2A4A' },
+  earth: { label:'🌍 Earth', navy:'#2B2210', navyMid:'#3E3018', flame:'#7FA84D', flameLight:'#ABCE7D', purple:'#6B4F2A', swatch:'#2B2210' },
+  wind:  { label:'🌬️ Wind',  navy:'#33424D', navyMid:'#4A5C68', flame:'#8FD6E0', flameLight:'#D6F3F6', purple:'#5C7C86', swatch:'#33424D' },
+  fire:  { label:'🔥 Fire',  navy:'#3A0F0A', navyMid:'#5C1A0F', flame:'#F2541D', flameLight:'#FFA552', purple:'#8C2F1D', swatch:'#3A0F0A' }
 };
 
 function applyTheme(key){
@@ -1809,41 +1801,111 @@ function updateDrawSub(){
   document.getElementById('drawSub').textContent = s.participantPool.length + ' of ' + s.participants.length + ' remaining this round';
 }
 
+/* ---------------- Cage Ball Rendering (JS-driven billboard spheres) ----------------
+   Each ball's div is only ever moved with translate3d + scale — never rotated —
+   which is what keeps it always "facing" the viewer like a real sphere instead of
+   flattening into an ellipse as it swings around. The rotation itself is computed
+   in JS as a position on a sphere, recalculated every animation frame. */
+let cageBallData = [];
+let cageAngle = 0;
+let cageAnimFrameId = null;
+let cageTumbling = false;
+
 function buildCageBalls(){
   const s = state();
   const sphere = document.getElementById('cageSphere');
   sphere.innerHTML = '';
-  sphere.classList.remove('tumbling');
+  cageBallData = [];
   const total = s.participants.length || 1;
   const count = Math.min(total, 30);
-  const radius = 100;
+
   for(let i=0;i<count;i++){
     // Fibonacci sphere distribution — evenly scatters balls across a sphere surface
     const y = 1 - (count === 1 ? 0 : (i / (count-1)) * 2);
     const r = Math.sqrt(Math.max(0, 1 - y*y));
     const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-    const x = Math.cos(theta) * r;
-    const z = Math.sin(theta) * r;
+    const bx = Math.cos(theta) * r;
+    const bz = Math.sin(theta) * r;
 
-    // Depth cue: balls toward the back (negative z) are smaller, dimmer, and
-    // slightly blurred — this "fog" effect is what makes CSS 3D actually read
-    // as depth instead of a flat scattered circle.
+    const ball = document.createElement('div');
+    ball.className = 'cage-ball';
+    ball.textContent = i+1;
+    ball.style.setProperty('--ball-color', palette[i % palette.length]);
+    sphere.appendChild(ball);
+
+    cageBallData.push({ bx, by: y, bz, el: ball });
+  }
+  renderCageFrame(cageAngle);
+  startCageIdleLoop();
+}
+
+function renderCageFrame(angleDeg){
+  const radius = 100;
+  const rad = (angleDeg * Math.PI) / 180;
+  const cosA = Math.cos(rad), sinA = Math.sin(rad);
+
+  cageBallData.forEach(b => {
+    // Rotate this ball's fixed sphere-position around the vertical (Y) axis.
+    const x = b.bx * cosA - b.bz * sinA;
+    const z = b.bx * sinA + b.bz * cosA;
+    const y = b.by;
+
+    // Depth cue: balls toward the back are smaller, dimmer, and slightly blurred.
     const depth = (z + 1) / 2; // 0 (back) .. 1 (front)
     const scale = 0.72 + depth * 0.5;
     const opacity = 0.55 + depth * 0.45;
     const blur = (1 - depth) * 1.4;
     const brightness = 0.7 + depth * 0.5;
 
-    const ball = document.createElement('div');
-    ball.className = 'cage-ball';
-    ball.textContent = i+1;
-    ball.style.transform = 'translate3d(' + (x*radius).toFixed(1) + 'px,' + (y*radius).toFixed(1) + 'px,' + (z*radius).toFixed(1) + 'px) scale(' + scale.toFixed(2) + ')';
-    ball.style.opacity = opacity.toFixed(2);
-    ball.style.filter = 'blur(' + blur.toFixed(2) + 'px) brightness(' + brightness.toFixed(2) + ')';
-    ball.style.zIndex = Math.round(depth * 100);
-    sphere.appendChild(ball);
-  }
+    // translate3d + scale only — never rotate — so the ball's round face always shows.
+    b.el.style.transform = 'translate3d(' + (x*radius).toFixed(1) + 'px,' + (y*radius).toFixed(1) + 'px,' + (z*radius).toFixed(1) + 'px) scale(' + scale.toFixed(2) + ')';
+    b.el.style.opacity = opacity.toFixed(2);
+    b.el.style.filter = 'blur(' + blur.toFixed(2) + 'px) brightness(' + brightness.toFixed(2) + ')';
+    b.el.style.zIndex = Math.round(depth * 100);
+  });
 }
+
+function startCageIdleLoop(){
+  if(cageAnimFrameId) cancelAnimationFrame(cageAnimFrameId);
+  let lastTime = performance.now();
+  function loop(now){
+    const dt = now - lastTime;
+    lastTime = now;
+    if(!cageTumbling){
+      cageAngle = (cageAngle + dt * 0.02) % 360; // slow idle spin
+      renderCageFrame(cageAngle);
+    }
+    cageAnimFrameId = requestAnimationFrame(loop);
+  }
+  cageAnimFrameId = requestAnimationFrame(loop);
+}
+
+function stopCageIdleLoop(){
+  if(cageAnimFrameId){ cancelAnimationFrame(cageAnimFrameId); cageAnimFrameId = null; }
+}
+
+function tumbleCage(durationMs, onDone){
+  cageTumbling = true;
+  const startAngle = cageAngle;
+  const spins = 5 + Math.random()*2;
+  const endAngle = startAngle + spins*360;
+  const startTime = performance.now();
+  function step(now){
+    const t = Math.min(1, (now-startTime)/durationMs);
+    const eased = 1 - Math.pow(1-t, 3); // ease-out cubic — fast start, settles smoothly
+    cageAngle = startAngle + (endAngle-startAngle)*eased;
+    renderCageFrame(cageAngle % 360);
+    if(t < 1){
+      requestAnimationFrame(step);
+    } else {
+      cageTumbling = false;
+      if(onDone) onDone();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+
 
 function drawParticipant(){
   const s = state();
@@ -1853,14 +1915,9 @@ function drawParticipant(){
   const btn = document.getElementById('drawBtn');
   btn.disabled = true;
   document.getElementById('revealModal').classList.remove('active');
-
-  const sphere = document.getElementById('cageSphere');
-  sphere.classList.remove('tumbling');
-  void sphere.offsetWidth; // restart animation
-  sphere.classList.add('tumbling');
   if(typeof playClickSound === 'function') playClickSound();
 
-  setTimeout(()=>{
+  tumbleCage(1800, () => {
     try {
       const pickPos = Math.floor(Math.random()*s.participantPool.length);
       const idx = s.participantPool[pickPos];
@@ -1879,10 +1936,11 @@ function drawParticipant(){
       alert('Something went wrong drawing a name. Error: ' + e.message);
       btn.disabled = false;
     }
-  }, 1800);
+  });
 }
 
 function continueToWheelAfterDraw(){
+  stopCageIdleLoop();
   document.getElementById('revealModal').classList.remove('active');
   const banner = document.getElementById('wheelParticipantBanner');
   banner.textContent = 'Now answering: ' + drawnParticipantName;
@@ -1891,6 +1949,7 @@ function continueToWheelAfterDraw(){
 }
 
 function skipDrawToWheel(){
+  stopCageIdleLoop();
   drawnParticipantName = null;
   document.getElementById('wheelParticipantBanner').style.display = 'none';
   showView('view-wheel');
