@@ -430,6 +430,18 @@
     0%{ transform:translate(-50%,-50%) translate(0,0) rotate(0deg); opacity:1; }
     100%{ transform:translate(-50%,-50%) translate(var(--drift), 220px) rotate(var(--rot)); opacity:0; }
   }
+  @keyframes ribbonFall{
+    0%{ transform:translateX(-50%) translateY(0) rotate(0deg); opacity:1; }
+    25%{ transform:translateX(calc(-50% + var(--sway))) translateY(25vh) rotate(var(--rrot)); }
+    50%{ transform:translateX(calc(-50% - var(--sway))) translateY(50vh) rotate(0deg); }
+    75%{ transform:translateX(calc(-50% + var(--sway))) translateY(75vh) rotate(var(--rrot)); }
+    100%{ transform:translateX(-50%) translateY(105vh) rotate(0deg); opacity:.9; }
+  }
+  @keyframes fireworkBurst{
+    0%{ transform:translate(-50%,-50%) translate(0,0) scale(1); opacity:1; }
+    70%{ opacity:1; }
+    100%{ transform:translate(-50%,-50%) translate(var(--fx), var(--fy)) scale(.3); opacity:0; }
+  }
 
   /* ---------------- SUBSCRIBER EMAIL CHECK ---------------- */
   #view-emailcheck{ justify-content:center; align-items:center; padding:40px 20px; text-align:center; }
@@ -801,9 +813,8 @@
         <div class="bowl-rim"></div>
         <div class="cage-glow"></div>
         <div class="cage-shadow"></div>
+        <button class="hub draw-btn" id="drawBtn" onclick="drawParticipant()">🎱<br>DRAW</button>
       </div>
-
-      <button class="hub draw-btn" id="drawBtn" onclick="drawParticipant()">🎱<br>DRAW</button>
     </div>
 
     <button class="ghost-btn" style="margin-top:18px;" onclick="skipDrawToWheel()">Skip — spin without drawing</button>
@@ -1076,12 +1087,40 @@ function playBallRevealSound(){
   } catch(e){}
 }
 
-// Cheerful ascending chime for a correct answer
+// Short percussive "clap" using filtered noise (Web Audio can't do real vocals,
+// so this pairs claps with a bright chord swell to capture that celebratory feel)
+function playClapNoise(startOffset, duration, peakGain){
+  const ctx = getAudioCtx();
+  const bufferSize = Math.floor(ctx.sampleRate * duration);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){
+    data[i] = (Math.random()*2-1) * Math.pow(1 - i/bufferSize, 2);
+  }
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 1600;
+  filter.Q.value = 0.7;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(peakGain, ctx.currentTime + startOffset);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startOffset + duration);
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  noise.start(ctx.currentTime + startOffset);
+  noise.stop(ctx.currentTime + startOffset + duration);
+}
+
+// Correct answer: clap-clap-clap, then a bright triumphant chord swell ("cheer")
 function playCorrectSound(){
   if(!soundEnabled) return;
   try {
-    const notes = [659.25, 830.61, 1046.50];
-    notes.forEach((freq, idx) => playTone(freq, idx*0.09, 0.3, 'sine', 0.55));
+    [0, 0.1, 0.2].forEach(t => playClapNoise(t, 0.09, 0.8));
+    const chord = [523.25, 659.25, 783.99, 1046.50]; // C E G C — bright major chord
+    chord.forEach((freq, idx) => playTone(freq, 0.3 + idx*0.03, 0.55, 'sine', 0.5));
+    playTone(1568, 0.42, 0.4, 'triangle', 0.4); // sparkle on top
   } catch(e){}
 }
 
@@ -2257,7 +2296,7 @@ function markAnswer(isCorrect){
     if(!s.scores[drawnParticipantName]) s.scores[drawnParticipantName] = 0;
     if(isCorrect){
       s.scores[drawnParticipantName] += 1;
-      launchConfetti();
+      launchCelebration();
     }
     saveState();
     showToast(isCorrect ? (drawnParticipantName + ' scores a point!') : 'Marked — no point this round.');
@@ -2293,6 +2332,75 @@ function launchConfetti(){
     container.appendChild(piece);
   }
   setTimeout(()=>{ container.remove(); }, 1700);
+}
+
+function launchRibbons(){
+  const colors = ['#F2701D','#FFA552','#7ED957','#4CC9F0','#8367C7','#F25CB4','#FFD166'];
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed; inset:0; pointer-events:none; z-index:201; overflow:hidden;';
+  document.body.appendChild(container);
+
+  for(let i=0;i<10;i++){
+    const ribbon = document.createElement('div');
+    const startX = 10 + Math.random()*80;
+    const sway = 40 + Math.random()*50;
+    const duration = 1600 + Math.random()*900;
+    const delay = Math.random()*300;
+    const rotation = Math.random()*180 - 90;
+    ribbon.style.cssText =
+      'position:absolute; top:-8%; left:' + startX + '%; width:9px; height:34px; border-radius:4px;' +
+      'background:' + colors[i % colors.length] + '; opacity:.95;' +
+      'transform:translateX(-50%) rotate(0deg);' +
+      'animation:ribbonFall ' + duration + 'ms ease-in ' + delay + 'ms forwards;' +
+      '--sway:' + sway + 'px; --rrot:' + rotation + 'deg;';
+    container.appendChild(ribbon);
+  }
+  setTimeout(()=>{ container.remove(); }, 2700);
+}
+
+function launchFireworks(){
+  const palettes = [
+    ['#FFD166','#F2701D','#FFA552'],
+    ['#7ED957','#4CC9F0','#8367C7'],
+    ['#F25CB4','#FFD166','#4CC9F0']
+  ];
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed; inset:0; pointer-events:none; z-index:202; overflow:hidden;';
+  document.body.appendChild(container);
+
+  const burstCount = 2 + Math.floor(Math.random()*2); // 2-3 bursts
+  for(let b=0; b<burstCount; b++){
+    const cx = 25 + Math.random()*50; // vw%
+    const cy = 20 + Math.random()*35; // vh%
+    const colors = palettes[b % palettes.length];
+    const delay = b * 260;
+    const sparkCount = 18;
+
+    for(let i=0;i<sparkCount;i++){
+      const spark = document.createElement('div');
+      const angle = (i / sparkCount) * Math.PI * 2;
+      const dist = 70 + Math.random()*50;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      const size = 4 + Math.random()*3;
+      spark.style.cssText =
+        'position:absolute; top:' + cy + '%; left:' + cx + '%; width:' + size + 'px; height:' + size + 'px;' +
+        'border-radius:50%; background:' + colors[i % colors.length] + ';' +
+        'box-shadow:0 0 6px ' + colors[i % colors.length] + ';' +
+        'transform:translate(-50%,-50%); opacity:1;' +
+        'animation:fireworkBurst 900ms ease-out ' + delay + 'ms forwards;' +
+        '--fx:' + dx.toFixed(1) + 'px; --fy:' + dy.toFixed(1) + 'px;';
+      container.appendChild(spark);
+    }
+  }
+  setTimeout(()=>{ container.remove(); }, 1600 + burstCount*260);
+}
+
+// Full correct-answer celebration: confetti + ribbons + fireworks together
+function launchCelebration(){
+  launchConfetti();
+  launchRibbons();
+  launchFireworks();
 }
 
 /* ---------------- Scoreboard ---------------- */
