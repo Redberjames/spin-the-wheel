@@ -852,8 +852,8 @@
 
       <div id="itemList"></div>
       <div class="add-row">
-        <input type="text" id="newItemText" placeholder="New question/item text…" maxlength="80">
-        <input type="text" id="newItemAnswer" placeholder="Answer (optional)…" maxlength="60">
+        <input type="text" id="newItemText" placeholder="New question/item text…" maxlength="80" onkeydown="if(event.key==='Enter'){event.preventDefault(); addItem();}">
+        <input type="text" id="newItemAnswer" placeholder="Answer (optional)…" maxlength="60" onkeydown="if(event.key==='Enter'){event.preventDefault(); addItem();}">
         <button onclick="addItem()">+ Add item</button>
       </div>
 
@@ -893,7 +893,7 @@
 
       <div id="participantList"></div>
       <div class="add-row">
-        <input type="text" id="newParticipantName" placeholder="Student/participant name…" maxlength="60">
+        <input type="text" id="newParticipantName" placeholder="Student/participant name…" maxlength="60" onkeydown="if(event.key==='Enter'){event.preventDefault(); addParticipant();}">
         <button onclick="addParticipant()">+ Add name</button>
       </div>
 
@@ -1003,44 +1003,128 @@ let soundEnabled = localStorage.getItem('stw_soundEnabled') !== '0';
 /* Web Audio Synthesizer */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new AudioContext();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
 
+function playTone(freq, startOffset, duration, type, peakGain){
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(freq, ctx.currentTime + startOffset);
+  gain.gain.setValueAtTime(peakGain, ctx.currentTime + startOffset);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startOffset + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(ctx.currentTime + startOffset);
+  osc.stop(ctx.currentTime + startOffset + duration);
+}
+
+// Wheel spin ticking (mechanical clack)
 function playClickSound(){
   if(!soundEnabled) return;
   try {
-    if(!audioCtx) audioCtx = new AudioContext();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.04);
-    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+    osc.frequency.setValueAtTime(160, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(45, ctx.currentTime + 0.05);
+    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(ctx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.04);
+    osc.stop(ctx.currentTime + 0.05);
   } catch(e){}
 }
 
+// Big win fanfare (wheel result reveal)
 function playWinSound(){
   if(!soundEnabled) return;
   try {
-    if(!audioCtx) audioCtx = new AudioContext();
     const notes = [523.25, 659.25, 783.99, 1046.50];
-    notes.forEach((freq, idx) => {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx*0.08);
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime + idx*0.08);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx*0.08 + 0.25);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(audioCtx.currentTime + idx*0.08);
-      osc.stop(audioCtx.currentTime + idx*0.08 + 0.25);
+    notes.forEach((freq, idx) => playTone(freq, idx*0.08, 0.28, 'sine', 0.55));
+  } catch(e){}
+}
+
+// Soft general-purpose UI tap — settings, tabs, navigation, any button press
+function playUIClick(){
+  if(!soundEnabled) return;
+  try {
+    playTone(720, 0, 0.045, 'sine', 0.35);
+  } catch(e){}
+}
+
+// Fast rattle tick during the name-draw tumble
+function playDrawTickSound(){
+  if(!soundEnabled) return;
+  try {
+    playTone(420 + Math.random()*80, 0, 0.05, 'square', 0.28);
+  } catch(e){}
+}
+
+// Satisfying "pop" when a name is revealed
+function playBallRevealSound(){
+  if(!soundEnabled) return;
+  try {
+    playTone(500, 0, 0.09, 'sine', 0.5);
+    playTone(850, 0.07, 0.18, 'sine', 0.55);
+  } catch(e){}
+}
+
+// Cheerful ascending chime for a correct answer
+function playCorrectSound(){
+  if(!soundEnabled) return;
+  try {
+    const notes = [659.25, 830.61, 1046.50];
+    notes.forEach((freq, idx) => playTone(freq, idx*0.09, 0.3, 'sine', 0.55));
+  } catch(e){}
+}
+
+// Descending buzzer for a wrong answer
+function playWrongSound(){
+  if(!soundEnabled) return;
+  try {
+    playTone(300, 0, 0.16, 'sawtooth', 0.4);
+    playTone(190, 0.14, 0.28, 'sawtooth', 0.4);
+  } catch(e){}
+}
+
+// Countdown timer — per-second tick
+function playTickSound(){
+  if(!soundEnabled) return;
+  try {
+    playTone(1000, 0, 0.035, 'square', 0.3);
+  } catch(e){}
+}
+
+// Countdown timer — time's up alarm
+function playTimeUpSound(){
+  if(!soundEnabled) return;
+  try {
+    [0, 0.18, 0.36].forEach(offset => {
+      playTone(880, offset, 0.15, 'square', 0.5);
+      playTone(660, offset + 0.09, 0.15, 'square', 0.5);
     });
   } catch(e){}
 }
+
+// Global UI click sound — fires for any button press (or subject card tap) anywhere
+// in the app, except ones that already play their own distinct sound (wheel hub,
+// draw button, correct/incorrect, mute toggle itself) so sounds never double up.
+document.addEventListener('click', function(e){
+  const target = e.target.closest('button, .subject-card');
+  if(!target) return;
+  const skipIds = ['hub', 'drawBtn'];
+  const skipClasses = ['score-btn'];
+  if(skipIds.includes(target.id)) return;
+  if(skipClasses.some(c => target.classList.contains(c))) return;
+  playUIClick();
+}, true);
 
 function toggleSound(){
   soundEnabled = !soundEnabled;
@@ -1482,6 +1566,7 @@ function applyBrandingFromStorage(){
 
 /* ---------------- Theme Presets ---------------- */
 const THEMES = {
+  default:{ label:'⭐ Default', navy:'#0F2A54', navyMid:'#17407A', flame:'#F2701D', flameLight:'#FFA552', purple:'#5B4B9E', swatch:'#0F2A54' },
   water: { label:'💧 Water', navy:'#0A2540', navyMid:'#0F3A5C', flame:'#0891C4', flameLight:'#4FC3E8', purple:'#155E82', swatch:'#0A2540' },
   earth: { label:'🌍 Earth', navy:'#25200D', navyMid:'#3A3012', flame:'#5E8C2E', flameLight:'#8FC24A', purple:'#6B4A1E', swatch:'#25200D' },
   wind:  { label:'🌬️ Wind',  navy:'#233240', navyMid:'#33495A', flame:'#0EA5B7', flameLight:'#4FD6E3', purple:'#2C6270', swatch:'#233240' },
@@ -1505,7 +1590,7 @@ function applyTheme(key){
 function renderThemeGrid(){
   const grid = document.getElementById('themeGrid');
   if(!grid) return;
-  const current = localStorage.getItem('stw_theme') || 'water';
+  const current = localStorage.getItem('stw_theme') || 'default';
   grid.innerHTML = '';
   Object.keys(THEMES).forEach(key=>{
     const t = THEMES[key];
@@ -1520,7 +1605,7 @@ function renderThemeGrid(){
 }
 
 function applyThemeFromStorage(){
-  const key = localStorage.getItem('stw_theme') || 'water';
+  const key = localStorage.getItem('stw_theme') || 'default';
   applyTheme(key);
 }
 
@@ -1934,10 +2019,11 @@ function startResultTimer(totalSeconds){
       resultTimerInterval = null;
       numEl.textContent = '⏰';
       badge.classList.add('time-up');
-      if(typeof playClickSound === 'function') playClickSound();
+      playTimeUpSound();
       return;
     }
     numEl.textContent = remaining;
+    playTickSound();
     const fraction = remaining / totalSeconds;
     ringFg.style.strokeDashoffset = (TIMER_RING_CIRCUMFERENCE * (1 - fraction)).toFixed(1);
     ringFg.style.stroke = fraction <= 0.25 ? '#D9432B' : fraction <= 0.5 ? '#E0A72E' : '#3FA34D';
@@ -2119,9 +2205,13 @@ function drawParticipant(){
   const btn = document.getElementById('drawBtn');
   btn.disabled = true;
   document.getElementById('revealModal').classList.remove('active');
-  if(typeof playClickSound === 'function') playClickSound();
+  playDrawTickSound();
+
+  // Fast rattling ticks throughout the tumble animation, like marbles clacking in the cage.
+  const tickTimer = setInterval(playDrawTickSound, 110);
 
   tumbleCage(1800, () => {
+    clearInterval(tickTimer);
     try {
       const pickPos = Math.floor(Math.random()*s.participantPool.length);
       const idx = s.participantPool[pickPos];
@@ -2131,7 +2221,7 @@ function drawParticipant(){
 
       document.getElementById('revealName').textContent = drawnParticipantName;
       document.getElementById('revealModal').classList.add('active');
-      if(typeof playWinSound === 'function') playWinSound();
+      playBallRevealSound();
       updateDrawSub();
       buildCageBalls();
       btn.disabled = false;
@@ -2162,6 +2252,7 @@ function skipDrawToWheel(){
 /* ---------------- Scoring ---------------- */
 function markAnswer(isCorrect){
   const s = state();
+  if(isCorrect){ playCorrectSound(); } else { playWrongSound(); }
   if(drawnParticipantName){
     if(!s.scores[drawnParticipantName]) s.scores[drawnParticipantName] = 0;
     if(isCorrect){
