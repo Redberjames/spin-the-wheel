@@ -37,8 +37,16 @@
     color:#fff;
   }
   .view{ display:none; min-height:100vh; }
-  .view.active{ display:flex; flex-direction:column; align-items:center; }
-  button{ font-family:inherit; }
+  .view.active{ display:flex; flex-direction:column; align-items:center; animation:viewFadeIn .22s ease; }
+  @keyframes viewFadeIn{
+    from{ opacity:0; transform:translateY(6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .view.active{ animation:none; }
+  }
+  button{ font-family:inherit; transition:transform .15s ease, opacity .15s ease, box-shadow .15s ease, background-color .15s ease; }
+  button:active{ transform:scale(.96); }
 
   /* ---------------- Themed Atmosphere Background ---------------- */
   .theme-atmosphere{
@@ -129,11 +137,11 @@
     position: relative; display: flex; align-items: center; gap: 8px;
     background: linear-gradient(135deg, var(--purple), #2a2050);
     background: linear-gradient(135deg, var(--purple), color-mix(in srgb, var(--purple) 55%, black));
-    border-radius: 16px; padding: 14px 16px;
-    box-shadow: 0 10px 22px rgba(0,0,0,.35);
-    transition: transform .12s ease;
+    border-radius: 18px; padding: 16px 18px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.28);
+    transition: transform .18s ease, box-shadow .18s ease;
   }
-  .subject-card:hover{ transform: translateY(-2px); }
+  .subject-card:hover{ transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,.34); }
   
   .subject-btn{
     display:flex; align-items:center; gap:14px; flex:1;
@@ -221,7 +229,23 @@
     display:flex; align-items:center; justify-content:center;
   }
   .icon-btn:hover{ background:rgba(255,255,255,.18); }
-  .topbar-actions{ display:flex; gap:8px; }
+  .topbar-actions{ display:flex; gap:8px; align-items:center; }
+
+  .more-menu-wrap{ position:relative; }
+  .more-menu{
+    display:none; position:absolute; top:calc(100% + 8px); right:0; min-width:180px;
+    background:#1f1846; background:color-mix(in srgb, var(--navy-mid) 65%, black);
+    border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:6px;
+    box-shadow:0 12px 30px rgba(0,0,0,.4); z-index:30;
+    animation:modalPopIn .16s ease;
+  }
+  .more-menu.open{ display:block; }
+  .more-menu-item{
+    display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+    background:none; border:none; color:#fff; font-size:14px; padding:10px 12px;
+    border-radius:9px; cursor:pointer;
+  }
+  .more-menu-item:hover{ background:rgba(255,255,255,.1); }
 
   .ribbon{
     position:relative; margin:6px auto 4px; padding:10px 34px; border-radius:8px; text-align:center;
@@ -566,7 +590,7 @@
 
   /* ---------------- SETTINGS VIEW ---------------- */
   #view-settings{ padding:24px 16px 60px; width:100%; max-width:560px; margin:0 auto; align-items:center; }
-  .settings-panel{ width:100%; background:#1f1846; background:color-mix(in srgb, var(--navy-mid) 65%, black); border-radius:16px; padding:22px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+  .settings-panel{ width:100%; background:#1f1846; background:color-mix(in srgb, var(--navy-mid) 65%, black); border-radius:20px; padding:26px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), 0 10px 30px rgba(0,0,0,.25); }
 
   .settings-tabs{ display:flex; gap:8px; margin-bottom:18px; }
   .settings-tab{
@@ -578,8 +602,8 @@
 
   .danger-btn{ border-color:rgba(255,120,120,.4) !important; color:#ffb3b3 !important; }
   .danger-btn:hover{ background:rgba(255,120,120,.12) !important; }
-  .settings-panel h2{ margin:0 0 4px; font-size:16px; letter-spacing:1px; text-transform:uppercase; color:var(--flame-light); }
-  .settings-panel p.hint{ margin:0 0 16px; font-size:13px; color:#a89fce; }
+  .settings-panel h2{ margin:0 0 6px; font-size:18px; letter-spacing:.5px; text-transform:none; color:var(--flame-light); font-weight:700; }
+  .settings-panel p.hint{ margin:0 0 18px; font-size:13px; color:#a89fce; line-height:1.5; }
 
   .excel-tools{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
   .tool-btn{
@@ -633,8 +657,14 @@
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
   .modal-backdrop{ position:fixed; inset:0; background:rgba(6,10,25,.75); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
-  .modal-backdrop.active{ display:flex; }
-  .modal-box{ background:var(--cream); color:var(--ink); border-radius:14px; width:100%; max-width:480px; max-height:85vh; overflow-y:auto; padding:22px; }
+  .modal-backdrop.active{ display:flex; animation:modalFadeIn .18s ease; }
+  .modal-backdrop.active .modal-box{ animation:modalPopIn .22s cubic-bezier(.2,.9,.3,1.1); }
+  @keyframes modalFadeIn{ from{ opacity:0; } to{ opacity:1; } }
+  @keyframes modalPopIn{ from{ opacity:0; transform:scale(.94) translateY(8px); } to{ opacity:1; transform:scale(1) translateY(0); } }
+  @media (prefers-reduced-motion: reduce){
+    .modal-backdrop.active, .modal-backdrop.active .modal-box{ animation:none; }
+  }
+  .modal-box{ background:var(--cream); color:var(--ink); border-radius:20px; width:100%; max-width:480px; max-height:85vh; overflow-y:auto; padding:26px; box-shadow:0 20px 50px rgba(0,0,0,.4); }
   .modal-box h3{ margin:0 0 4px; }
   .modal-box p.hint{ margin:0 0 14px; font-size:13px; color:var(--muted); }
 
@@ -665,6 +695,41 @@
   .history-list{ max-height:110px; overflow-y:auto; font-size:12.5px; color:#c8d3ea; }
   .history-list div{ padding:4px 0; border-bottom:1px dashed rgba(255,255,255,.08); }
   .history-list span{ color:#fff; }
+
+  /* ---------------- Mobile Bottom Navigation ---------------- */
+  .mobile-bottom-nav{
+    display:none; position:fixed; bottom:0; left:0; right:0; z-index:40;
+    background:#1f1846; background:color-mix(in srgb, var(--navy-mid) 78%, black);
+    border-top:1px solid rgba(255,255,255,.12);
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    justify-content:space-around; box-shadow:0 -8px 24px rgba(0,0,0,.3);
+  }
+  .mobile-bottom-nav button{
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; color:#c8d3ea; font-size:21px; padding:6px 18px; border-radius:12px;
+  }
+  .mobile-bottom-nav button span{ font-size:10px; font-weight:bold; letter-spacing:.3px; }
+  .mobile-bottom-nav button:active{ background:rgba(255,255,255,.12); }
+  .mobile-bottom-nav.hidden{ display:none !important; }
+
+  /* ---------------- Mobile: bigger touch targets, bigger wheel, room for bottom nav ---------------- */
+  @media (max-width:600px){
+    .mobile-bottom-nav:not(.hidden){ display:flex; }
+    #view-wheel, #view-draw{ padding-bottom:88px; }
+
+    .icon-btn{ width:46px; height:46px; font-size:19px; }
+    .ghost-btn{ padding:12px 18px; font-size:14.5px; }
+    .subject-action-btn{ width:38px; height:38px; font-size:16px; }
+
+    .wheel-wrap{ width:min(440px, 92vw, 54vh); height:min(440px, 92vw, 54vh); }
+    .hub{ width:72px; height:72px; font-size:13px; }
+    .draw-btn{ width:104px; height:104px; font-size:13px; }
+
+    .subject-card{ padding:18px 18px; }
+    .subject-icon{ width:52px; height:52px; font-size:30px; }
+
+    .lock-submit, .ec-submit, .gs-save-btn, .spin-btn{ padding:15px; font-size:15.5px; }
+  }
 </style>
 </head>
 <body>
@@ -674,6 +739,14 @@
   <div class="atmo-blob atmo-1"></div>
   <div class="atmo-blob atmo-2"></div>
   <div class="atmo-blob atmo-3"></div>
+</div>
+
+<!-- Mobile Bottom Navigation — one-hand-reachable actions, shown only on small screens
+     during the wheel/draw views (hidden everywhere else via showView()) -->
+<div class="mobile-bottom-nav hidden" id="mobileBottomNav">
+  <button onclick="goHome()">🏠<span>Home</span></button>
+  <button onclick="openScoreboard()">🏆<span>Scores</span></button>
+  <button onclick="openSettings()">⚙<span>Settings</span></button>
 </div>
 
 <!-- Subscriber Email Check -->
@@ -805,8 +878,13 @@
   <div class="topbar">
     <button class="icon-btn" onclick="goHome()" title="Back to subjects">←</button>
     <div class="topbar-actions">
-      <button class="icon-btn" id="scoreboardBtn" onclick="openScoreboard()" title="Scoreboard" style="display:none;">🏆</button>
-      <button class="icon-btn" onclick="openAnswerKey()" title="Answer key">📋</button>
+      <div class="more-menu-wrap">
+        <button class="icon-btn" onclick="toggleMoreMenu(event)" title="More options">⋯</button>
+        <div class="more-menu" id="moreMenu">
+          <button class="more-menu-item" id="scoreboardBtn" onclick="openScoreboard(); closeMoreMenu();" style="display:none;">🏆 <span>Scoreboard</span></button>
+          <button class="more-menu-item" onclick="openAnswerKey(); closeMoreMenu();">📋 <span>Answer Key</span></button>
+        </div>
+      </div>
       <button class="icon-btn" onclick="openSettings()" title="Settings">⚙</button>
     </div>
   </div>
@@ -1630,6 +1708,11 @@ function saveSubjectForm(){
 function showView(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  const bottomNav = document.getElementById('mobileBottomNav');
+  if(bottomNav){
+    const showOn = ['view-wheel', 'view-draw'];
+    bottomNav.classList.toggle('hidden', !showOn.includes(id));
+  }
 }
 function goHome(){ stopCageIdleLoop(); closeMascotModal(); showView('view-home'); }
 
@@ -2790,6 +2873,19 @@ function confirmResetScores(){
 }
 
 /* ---------------- Answer Key Modal ---------------- */
+function toggleMoreMenu(e){
+  if(e) e.stopPropagation();
+  document.getElementById('moreMenu').classList.toggle('open');
+}
+function closeMoreMenu(){
+  document.getElementById('moreMenu').classList.remove('open');
+}
+document.addEventListener('click', function(e){
+  const menu = document.getElementById('moreMenu');
+  if(!menu || !menu.classList.contains('open')) return;
+  if(!e.target.closest('.more-menu-wrap')) closeMoreMenu();
+});
+
 function openAnswerKey(){
   const s = state();
   const list = document.getElementById('akList');
