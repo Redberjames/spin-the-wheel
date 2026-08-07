@@ -35,6 +35,11 @@
       var(--navy);
     font-family:'Nunito','Trebuchet MS','Segoe UI',Verdana,sans-serif;
     color:#fff;
+    /* Bold white text on a dark background renders fuzzy in Chrome/Safari without this —
+       most noticeable on the bold Fredoka headings (Sign In, PIN title, draw title, etc). */
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    text-rendering:optimizeLegibility;
   }
   .view{ display:none; min-height:100vh; }
   .view.active{ display:flex; flex-direction:column; align-items:center; animation:viewFadeIn .22s ease; }
@@ -337,7 +342,7 @@
   .score-btn.incorrect{ background:linear-gradient(180deg,#F2705C,#D9432B); box-shadow:0 3px 0 #a12c1a; }
   .score-btn:active{ transform:translateY(2px); box-shadow:none; }
 
-  /* ---------------- 3D Bingo Draw View ---------------- */
+  /* ---------------- Lotto Machine Draw View ---------------- */
   #view-draw{ justify-content:flex-start; align-items:center; padding:28px 16px 60px; text-align:center; }
   .draw-wrap{ width:100%; max-width:480px; display:flex; flex-direction:column; align-items:center; }
   .draw-title{
@@ -346,37 +351,39 @@
   }
   .draw-sub{ font-size:13px; color:var(--muted); margin-bottom:22px; }
 
-  .cage-scene{ position:relative; width:280px; height:280px; margin:0 auto 20px; perspective:1000px; }
+  .lotto-machine{ position:relative; width:230px; margin:0 auto 26px; padding-right:56px; }
 
-  /* Glass fishbowl shell — sits above the balls, gives the illusion of glass */
+  /* -- Glass dome + tumbling balls -- */
+  .cage-scene{ position:relative; width:210px; height:210px; margin:0 auto; perspective:1000px; z-index:2; }
+
   .bowl-glass{
-    position:absolute; inset:6px; border-radius:50%; pointer-events:none; z-index:5;
+    position:absolute; inset:4px; border-radius:50%; pointer-events:none; z-index:5;
     background:
-      radial-gradient(circle at 30% 22%, rgba(255,255,255,.55), rgba(255,255,255,.08) 30%, transparent 45%),
-      radial-gradient(circle at 72% 78%, rgba(255,255,255,.12), transparent 40%),
-      radial-gradient(circle at 50% 50%, rgba(160,200,255,.08), rgba(20,40,80,.12) 88%);
+      radial-gradient(circle at 30% 22%, rgba(255,255,255,.5), rgba(255,255,255,.08) 30%, transparent 45%),
+      radial-gradient(circle at 72% 78%, rgba(255,255,255,.1), transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(160,200,255,.06), rgba(20,40,80,.08) 88%);
     border:2px solid rgba(255,255,255,.35);
+    /* Soft rim light only — no dark inset band across the glass, which used to look like
+       a stray shadow sitting on top of the balls/button. */
     box-shadow:
-      inset 0 -18px 30px rgba(0,0,0,.25),
-      inset 0 14px 24px rgba(255,255,255,.15),
-      0 8px 20px rgba(0,0,0,.35);
+      inset 0 10px 18px rgba(255,255,255,.14),
+      0 8px 18px rgba(0,0,0,.3);
   }
   .bowl-rim{
-    position:absolute; top:2px; left:50%; transform:translateX(-50%);
-    width:70%; height:14px; border-radius:50%;
+    position:absolute; top:1px; left:50%; transform:translateX(-50%);
+    width:70%; height:12px; border-radius:50%;
     background:linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,.15));
     filter:blur(1px); z-index:6; pointer-events:none;
   }
 
   .cage-sphere{
     position:absolute; inset:0; transform-style:preserve-3d;
-    pointer-events:none; /* balls are purely decorative — never let them steal clicks from the DRAW button */
+    pointer-events:none; /* balls are purely decorative — never let them steal clicks */
   }
   .cage-ball{
-    position:absolute; top:50%; left:50%; width:38px; height:38px; margin:-19px 0 0 -19px;
+    position:absolute; top:50%; left:50%; width:34px; height:34px; margin:-17px 0 0 -17px;
     border-radius:50%;
     --ball-color: var(--flame);
-    background: radial-gradient(circle at 30% 24%, #fff 0%, rgba(255,255,255,.9) 8%, var(--ball-color) 42%, #333 100%);
     background:
       radial-gradient(circle at 30% 24%, #fff 0%, rgba(255,255,255,.9) 8%, var(--ball-color) 42%, color-mix(in srgb, var(--ball-color) 65%, black) 100%);
     box-shadow:
@@ -384,42 +391,94 @@
       inset 4px 4px 6px rgba(255,255,255,.5),
       0 3px 6px rgba(0,0,0,.35);
     display:flex; align-items:center; justify-content:center;
-    font-size:12px; font-weight:bold; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.5);
-    transition:opacity .3s ease, filter .3s ease;
+    font-size:11px; font-weight:bold; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.5);
   }
   .cage-ball::after{
     content:''; position:absolute; top:18%; left:24%; width:28%; height:20%;
     background:rgba(255,255,255,.85); border-radius:50%; filter:blur(1.5px);
   }
+  .cage-ball.ball-winner{
+    box-shadow:
+      inset -6px -8px 10px rgba(0,0,0,.35),
+      inset 4px 4px 6px rgba(255,255,255,.5),
+      0 0 22px 7px rgba(255,214,110,.9);
+  }
   .cage-glow{
     position:absolute; inset:0; border-radius:50%; pointer-events:none;
     background:radial-gradient(circle, rgba(242,112,29,.15), transparent 70%);
   }
-  .cage-shadow{
-    position:absolute; bottom:-6px; left:50%; width:170px; height:24px; transform:translateX(-50%);
-    background:radial-gradient(ellipse, rgba(0,0,0,.5), transparent 70%); border-radius:50%;
+
+  /* -- Chrome collar between dome and base -- */
+  .lotto-neck{
+    position:relative; z-index:3; width:110px; height:16px; margin:-8px auto 0;
+    background:linear-gradient(180deg,#eef0f2,#aeb2bb);
+    border-radius:5px;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.7), inset 0 -3px 5px rgba(0,0,0,.25), 0 3px 6px rgba(0,0,0,.3);
   }
-  .draw-btn{
-    width:96px; height:96px; font-size:13px; line-height:1.3; flex-direction:column; gap:2px;
-    z-index:12; /* above .bowl-glass (5) and .bowl-rim (6) so the glass shine/shadow never paints over it */
-    background:radial-gradient(circle at 35% 28%,#ffcf95,var(--flame) 60%,color-mix(in srgb, var(--flame) 60%, black));
+
+  /* -- Silver base with red-trimmed name plate -- */
+  .lotto-base{
+    position:relative; z-index:2; width:230px; height:96px; margin-top:-3px;
+    background:linear-gradient(180deg,#f2f3f5 0%,#cdd0d7 32%,#9a9ea8 72%,#7c8089 100%);
+    border-radius:24px 24px 32px 32px;
+    border:1px solid rgba(255,255,255,.5);
     box-shadow:
-      0 4px 10px rgba(0,0,0,.5),
-      inset 0 0 0 3px rgba(255,255,255,.4),
-      0 0 0 0 rgba(242,112,29,.45);
-    animation:drawBtnPulse 2.4s ease-in-out infinite;
+      inset 0 3px 0 rgba(255,255,255,.75),
+      inset 0 -10px 16px rgba(0,0,0,.22),
+      0 14px 26px rgba(0,0,0,.45);
   }
-  .draw-btn:disabled{ opacity:.5; cursor:not-allowed; animation:none; }
-  /* .hub is centered with translate(-50%,-50%); the global button:active{transform:scale(.96)}
-     rule would otherwise overwrite that and make the button jump out from under the cursor/finger
-     the instant it's pressed. Keep the centering and just scale on top of it. */
-  .hub.draw-btn:active{ transform:translate(-50%,-50%) scale(.96); }
-  @keyframes drawBtnPulse{
-    0%,100%{ box-shadow:0 4px 10px rgba(0,0,0,.5), inset 0 0 0 3px rgba(255,255,255,.4), 0 0 0 0 rgba(242,112,29,.45); }
-    50%{ box-shadow:0 4px 10px rgba(0,0,0,.5), inset 0 0 0 3px rgba(255,255,255,.4), 0 0 0 10px rgba(242,112,29,0); }
+  .lotto-knob{
+    position:absolute; left:50%; top:12px; transform:translateX(-50%);
+    width:18px; height:18px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff, #b7bbc4 55%, #6d7280);
+    box-shadow:0 2px 4px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.6);
+  }
+  .lotto-plate{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-42%);
+    width:172px; padding:9px 6px;
+    background:linear-gradient(180deg,#fffdf6,#f3ead0);
+    border:4px solid var(--red);
+    border-radius:8px;
+    font-family:'Fredoka','Arial Black',Arial,sans-serif;
+    font-weight:700; font-size:15px; letter-spacing:.5px;
+    color:#8a1f1f; text-align:center;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.8), 0 3px 6px rgba(0,0,0,.3);
+  }
+
+  /* -- Lever on the right: this is the actual DRAW trigger -- */
+  .lotto-lever{
+    position:absolute; right:-8px; top:64px; width:70px; height:150px;
+    background:none; border:none; padding:0; margin:0; cursor:pointer; z-index:20;
+  }
+  .lotto-lever:disabled{ cursor:not-allowed; opacity:.55; }
+  .lever-mount{
+    position:absolute; left:2px; bottom:20px; width:16px; height:16px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#9096a1 60%,#585c66);
+    box-shadow:0 2px 4px rgba(0,0,0,.4);
+  }
+  .lever-pivot{
+    position:absolute; left:8px; bottom:26px; width:9px; height:92px;
+    transform-origin:bottom center; transform:rotate(-16deg);
+    transition:transform .18s cubic-bezier(.34,1.56,.64,1);
+  }
+  .lever-rod{
+    position:absolute; inset:0; border-radius:6px;
+    background:linear-gradient(90deg,#e7e9ec,#9096a1 55%,#6d7280);
+    box-shadow:inset -2px 0 2px rgba(255,255,255,.5), inset 2px 0 3px rgba(0,0,0,.3), 2px 3px 6px rgba(0,0,0,.35);
+  }
+  .lever-handle{
+    position:absolute; top:-15px; left:50%; transform:translateX(-50%);
+    width:30px; height:30px; border-radius:50%;
+    background:radial-gradient(circle at 32% 26%,#ffcf95,var(--flame) 55%,color-mix(in srgb, var(--flame) 60%, black));
+    box-shadow:0 4px 8px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255,255,255,.4), 0 0 0 3px var(--navy);
+  }
+  .lotto-lever.pulling .lever-pivot{ transform:rotate(30deg); }
+  .lever-hint{
+    position:absolute; right:-2px; top:-20px; font-size:10px; font-weight:bold;
+    color:var(--muted); white-space:nowrap; letter-spacing:.3px;
   }
   @media (prefers-reduced-motion: reduce){
-    .draw-btn{ animation:none; }
+    .lever-pivot{ transition:none; }
   }
 
   .reveal-card{
@@ -742,7 +801,7 @@
 
     .wheel-wrap{ width:min(440px, 92vw, 54vh); height:min(440px, 92vw, 54vh); }
     .hub{ width:72px; height:72px; font-size:13px; }
-    .draw-btn{ width:104px; height:104px; font-size:13px; }
+    .lotto-machine{ transform:scale(.92); transform-origin:top center; }
 
     .subject-card{ padding:18px 18px; }
     .subject-icon{ width:52px; height:52px; font-size:30px; }
@@ -1058,13 +1117,26 @@
     </div>
 
     <div id="drawCageWrap">
-      <div class="cage-scene">
-        <div class="cage-sphere" id="cageSphere"></div>
-        <div class="bowl-glass"></div>
-        <div class="bowl-rim"></div>
-        <div class="cage-glow"></div>
-        <div class="cage-shadow"></div>
-        <button class="hub draw-btn" id="drawBtn" onclick="drawParticipant()">🎱<br>DRAW</button>
+      <div class="lotto-machine">
+        <div class="cage-scene">
+          <div class="cage-sphere" id="cageSphere"></div>
+          <div class="bowl-glass"></div>
+          <div class="bowl-rim"></div>
+          <div class="cage-glow"></div>
+        </div>
+        <div class="lotto-neck"></div>
+        <div class="lotto-base">
+          <div class="lotto-knob"></div>
+          <div class="lotto-plate">Draw Name</div>
+        </div>
+        <button class="lotto-lever" id="drawBtn" onclick="drawParticipant()" aria-label="Pull the lever to draw a name">
+          <span class="lever-hint">PULL</span>
+          <span class="lever-pivot">
+            <span class="lever-rod"></span>
+            <span class="lever-handle"></span>
+          </span>
+          <span class="lever-mount"></span>
+        </button>
       </div>
     </div>
 
@@ -2403,7 +2475,7 @@ function buildCageBalls(){
     ball.style.setProperty('--ball-color', palette[i % palette.length]);
     sphere.appendChild(ball);
 
-    cageBallData.push({ bx, by: y, bz, el: ball });
+    cageBallData.push({ bx, by: y, bz, el: ball, idx: i });
   }
   renderCageFrame(cageAngleY, cageAngleX);
   startCageIdleLoop();
@@ -2496,6 +2568,8 @@ function drawParticipant(){
 
   const btn = document.getElementById('drawBtn');
   btn.disabled = true;
+  btn.classList.add('pulling');
+  setTimeout(() => btn.classList.remove('pulling'), 380);
   document.getElementById('revealModal').classList.remove('active');
   playDrawTickSound();
 
@@ -2511,12 +2585,26 @@ function drawParticipant(){
       drawnParticipantName = s.participants[idx].name;
       saveState();
 
-      document.getElementById('revealName').textContent = drawnParticipantName;
-      document.getElementById('revealModal').classList.add('active');
+      // Briefly spotlight the actual winning ball in the dome before the name pops up.
+      stopCageIdleLoop();
+      const winnerBall = cageBallData.find(b => b.idx === idx);
+      if(winnerBall){
+        const el = winnerBall.el;
+        el.classList.add('ball-winner');
+        el.style.transition = 'transform .3s ease, filter .3s ease';
+        el.style.transform = 'translate3d(0px,0px,150px) scale(1.7)';
+        el.style.filter = 'brightness(1.15)';
+        el.style.zIndex = 999;
+      }
       playBallRevealSound();
-      updateDrawSub();
-      buildCageBalls();
-      btn.disabled = false;
+
+      setTimeout(() => {
+        document.getElementById('revealName').textContent = drawnParticipantName;
+        document.getElementById('revealModal').classList.add('active');
+        updateDrawSub();
+        buildCageBalls();
+        btn.disabled = false;
+      }, winnerBall ? 550 : 0);
     } catch(e){
       console.error('drawParticipant reveal failed:', e);
       alert('Something went wrong drawing a name. Error: ' + e.message);
