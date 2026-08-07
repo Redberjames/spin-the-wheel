@@ -389,12 +389,6 @@
     content:''; position:absolute; top:18%; left:24%; width:28%; height:20%;
     background:rgba(255,255,255,.85); border-radius:50%; filter:blur(1.5px);
   }
-  .cage-ball.ball-winner{
-    box-shadow:
-      inset -6px -8px 10px rgba(0,0,0,.35),
-      inset 4px 4px 6px rgba(255,255,255,.5),
-      0 0 22px 7px rgba(255,214,110,.9);
-  }
   /* Glass shell layered on top of the clipped scene — its highlight lives inside
      the same circular bounds as the dome, so it reads as light on curved glass
      instead of a ring floating above the machine. */
@@ -442,15 +436,16 @@
      digital readout, before the name popup appears -- */
   .number-window{
     position:absolute; left:50%; top:52%; transform:translate(-50%,-42%); z-index:1;
-    width:60px; height:60px; border-radius:50%;
+    width:80px; height:80px; border-radius:50%;
     background:radial-gradient(circle at 50% 38%, #1c2230, #05070c 78%);
-    border:5px solid #3a3f4a;
+    border:6px solid #3a3f4a;
     box-shadow:
-      inset 0 4px 8px rgba(0,0,0,.7),
-      inset 0 -2px 4px rgba(255,255,255,.06),
+      inset 0 5px 10px rgba(0,0,0,.7),
+      inset 0 -2px 5px rgba(255,255,255,.06),
       0 2px 3px rgba(255,255,255,.35),
-      0 4px 8px rgba(0,0,0,.4);
+      0 4px 10px rgba(0,0,0,.4);
     display:flex; align-items:center; justify-content:center;
+    transition:box-shadow .25s ease, border-color .25s ease;
   }
   .number-window::before{
     content:''; position:absolute; top:9%; left:16%; width:30%; height:24%;
@@ -459,12 +454,21 @@
   .number-window span{
     position:relative; z-index:1;
     font-family:'Fredoka','Arial Black',Arial,sans-serif; font-weight:700;
-    font-size:24px; color:#3a4150;
+    font-size:32px; color:#3a4150;
     transition:color .2s ease, text-shadow .2s ease;
+  }
+  .number-window.lit{
+    border-color:#ffb454;
+    box-shadow:
+      inset 0 5px 10px rgba(0,0,0,.6),
+      inset 0 -2px 5px rgba(255,180,90,.18),
+      0 0 0 4px rgba(255,150,50,.22),
+      0 0 24px 9px rgba(255,140,40,.6),
+      0 4px 10px rgba(0,0,0,.4);
   }
   .number-window.lit span{
     color:#ffb454;
-    text-shadow:0 0 6px rgba(255,150,50,.9), 0 0 14px rgba(255,120,30,.5);
+    text-shadow:0 0 8px rgba(255,150,50,.95), 0 0 20px rgba(255,120,30,.6);
     animation:numberPop .35s cubic-bezier(.34,1.56,.64,1);
   }
   @keyframes numberPop{
@@ -2630,17 +2634,9 @@ function drawParticipant(){
       drawnParticipantName = s.participants[idx].name;
       saveState();
 
-      // Briefly spotlight the actual winning ball in the dome before the name pops up.
+      // Stop the tumble on the drawn name; the reveal itself now lives entirely
+      // in the base's number window rather than spotlighting a ball in the dome.
       stopCageIdleLoop();
-      const winnerBall = cageBallData.find(b => b.idx === idx);
-      if(winnerBall){
-        const el = winnerBall.el;
-        el.classList.add('ball-winner');
-        el.style.transition = 'transform .3s ease, filter .3s ease';
-        el.style.transform = 'translate3d(0px,0px,150px) scale(1.7)';
-        el.style.filter = 'brightness(1.15)';
-        el.style.zIndex = 999;
-      }
       playBallRevealSound();
 
       // Light up the base's number window with the winning ball's number —
@@ -2656,7 +2652,7 @@ function drawParticipant(){
         updateDrawSub();
         buildCageBalls();
         btn.disabled = false;
-      }, winnerBall ? 550 : 0);
+      }, 550);
     } catch(e){
       console.error('drawParticipant reveal failed:', e);
       alert('Something went wrong drawing a name. Error: ' + e.message);
