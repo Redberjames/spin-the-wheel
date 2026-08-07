@@ -437,18 +437,46 @@
     background:repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0px, rgba(255,255,255,.05) 1px, transparent 1px, transparent 5px);
     opacity:.55;
   }
-  .lotto-nameplate{
+
+  /* -- Recessed number window: shows the drawn ball's number, lit up like a
+     digital readout, before the name popup appears -- */
+  .number-window{
     position:absolute; left:50%; top:52%; transform:translate(-50%,-42%); z-index:1;
-    width:174px; height:32px; border-radius:8px;
-    background:linear-gradient(180deg,#c62828,#8a1f1f);
-    border:2px solid rgba(255,255,255,.28);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,.4), inset 0 -1px 0 rgba(255,255,255,.12), 0 3px 6px rgba(0,0,0,.32);
+    width:60px; height:60px; border-radius:50%;
+    background:radial-gradient(circle at 50% 38%, #1c2230, #05070c 78%);
+    border:5px solid #3a3f4a;
+    box-shadow:
+      inset 0 4px 8px rgba(0,0,0,.7),
+      inset 0 -2px 4px rgba(255,255,255,.06),
+      0 2px 3px rgba(255,255,255,.35),
+      0 4px 8px rgba(0,0,0,.4);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .number-window::before{
+    content:''; position:absolute; top:9%; left:16%; width:30%; height:24%;
+    background:rgba(255,255,255,.16); border-radius:50%; filter:blur(2px);
+  }
+  .number-window span{
+    position:relative; z-index:1;
+    font-family:'Fredoka','Arial Black',Arial,sans-serif; font-weight:700;
+    font-size:24px; color:#3a4150;
+    transition:color .2s ease, text-shadow .2s ease;
+  }
+  .number-window.lit span{
+    color:#ffb454;
+    text-shadow:0 0 6px rgba(255,150,50,.9), 0 0 14px rgba(255,120,30,.5);
+    animation:numberPop .35s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes numberPop{
+    0%{ transform:scale(.5); opacity:0; }
+    60%{ transform:scale(1.15); opacity:1; }
+    100%{ transform:scale(1); }
   }
 
-  /* -- Lever: bolted to the base through a visible metal bracket, instead of
-     floating unattached beside the machine -- */
+  /* -- Lever: bolted to the base through a visible metal bracket, tilted outward
+     to the right so it never crosses in front of the glass dome -- */
   .lotto-lever{
-    position:absolute; right:-32px; top:80px; width:90px; height:150px;
+    position:absolute; right:-64px; top:78px; width:90px; height:150px;
     background:none; border:none; padding:0; margin:0; cursor:pointer; z-index:20;
   }
   .lotto-lever:disabled{ cursor:not-allowed; opacity:.55; }
@@ -466,7 +494,7 @@
   }
   .lever-pivot{
     position:absolute; left:8px; bottom:34px; width:10px; height:104px;
-    transform-origin:bottom center; transform:rotate(-14deg);
+    transform-origin:bottom center; transform:rotate(20deg);
     transition:transform .18s cubic-bezier(.34,1.56,.64,1);
   }
   .lever-rod{
@@ -480,7 +508,7 @@
     background:radial-gradient(circle at 32% 26%,#ffd7a8,var(--flame) 55%,color-mix(in srgb, var(--flame) 55%, black));
     box-shadow:0 5px 10px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,255,255,.45), 0 0 0 3px #cfd3da;
   }
-  .lotto-lever.pulling .lever-pivot{ transform:rotate(32deg); }
+  .lotto-lever.pulling .lever-pivot{ transform:rotate(-6deg); }
   @media (prefers-reduced-motion: reduce){
     .lever-pivot{ transition:none; }
   }
@@ -746,7 +774,13 @@
   @media (prefers-reduced-motion: reduce){
     .modal-backdrop.active, .modal-backdrop.active .modal-box{ animation:none; }
   }
-  .modal-box{ background:var(--cream); color:var(--ink); border-radius:20px; width:100%; max-width:480px; max-height:85vh; overflow-y:auto; padding:26px; box-shadow:0 20px 50px rgba(0,0,0,.4); }
+  .modal-box{ position:relative; background:var(--cream); color:var(--ink); border-radius:20px; width:100%; max-width:480px; max-height:85vh; overflow-y:auto; padding:26px; box-shadow:0 20px 50px rgba(0,0,0,.4); }
+  .modal-x-close{
+    position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%;
+    border:none; background:rgba(19,35,64,.08); color:var(--ink); font-size:15px; font-weight:bold;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; z-index:2;
+  }
+  .modal-x-close:hover{ background:rgba(19,35,64,.16); }
   .modal-box h3{ margin:0 0 4px; }
   .modal-box p.hint{ margin:0 0 14px; font-size:13px; color:var(--muted); }
 
@@ -1130,7 +1164,7 @@
         </div>
         <div class="lotto-collar"></div>
         <div class="lotto-base">
-          <div class="lotto-nameplate"></div>
+          <div class="number-window"><span id="drawnNumberDisplay">–</span></div>
         </div>
         <button class="lotto-lever" id="drawBtn" onclick="drawParticipant()" aria-label="Pull the lever to draw a name">
           <span class="lever-bracket"></span>
@@ -1149,6 +1183,7 @@
 <!-- Name Reveal Popup -->
 <div class="modal-backdrop" id="revealModal">
   <div class="modal-box" style="text-align:center;">
+    <button class="modal-x-close" onclick="dismissRevealModal()" aria-label="Close and return to Draw Name">✕</button>
     <div class="reveal-label">Now Answering</div>
     <div class="reveal-name" id="revealName">—</div>
     <button class="lock-submit" onclick="continueToWheelAfterDraw()">Continue to Question →</button>
@@ -2575,6 +2610,14 @@ function drawParticipant(){
   document.getElementById('revealModal').classList.remove('active');
   playDrawTickSound();
 
+  // Reset the number window so it doesn't still show the previous round's number
+  // while the balls are tumbling for a new draw.
+  const numberWindow = document.getElementById('drawnNumberDisplay')?.parentElement;
+  if(numberWindow){
+    numberWindow.classList.remove('lit');
+    document.getElementById('drawnNumberDisplay').textContent = '–';
+  }
+
   // Fast rattling ticks throughout the tumble animation, like marbles clacking in the cage.
   const tickTimer = setInterval(playDrawTickSound, 110);
 
@@ -2600,6 +2643,13 @@ function drawParticipant(){
       }
       playBallRevealSound();
 
+      // Light up the base's number window with the winning ball's number —
+      // a beat before the name popup, like a real bingo-cage readout.
+      if(numberWindow){
+        document.getElementById('drawnNumberDisplay').textContent = String(idx + 1);
+        numberWindow.classList.add('lit');
+      }
+
       setTimeout(() => {
         document.getElementById('revealName').textContent = drawnParticipantName;
         document.getElementById('revealModal').classList.add('active');
@@ -2613,6 +2663,12 @@ function drawParticipant(){
       btn.disabled = false;
     }
   });
+}
+
+function dismissRevealModal(){
+  // Closes the name popup and returns to the Draw Name screen underneath,
+  // without forcing the user into the question/wheel flow.
+  document.getElementById('revealModal').classList.remove('active');
 }
 
 function continueToWheelAfterDraw(){
