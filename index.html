@@ -11,18 +11,44 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
-    --navy:#0F2A54;
-    --navy-mid:#17407A;
+    /* Legacy tokens — kept so existing rules below keep working; applyTheme()
+       overwrites both these and the new design-system tokens together. */
+    --navy:#071B4D;
+    --navy-mid:#0B2866;
     --sky:#2E86DE;
     --leaf:#3FA34D;
     --leaf-dark:#2A7A38;
-    --flame:#F2701D;
-    --flame-light:#FFA552;
+    --flame:#4C8DFF;
+    --flame-light:#6EA5FF;
     --cream:#FFFBF2;
     --ink:#132340;
-    --muted:#6D7FA0;
-    --purple:#5B4B9E;
-    --red:#E14B4B;
+    --muted:#B9C9E8;
+    --purple:#183A70;
+    --red:#F06A6A;
+
+    /* ---- Centralized premium design-system tokens (Part 2) ---- */
+    --bg-main:#071B4D;
+    --surface:#0B2866;
+    --surface-elevated:#123875;
+    --surface-hover:#193F82;
+    --border:#284F8F;
+    --primary:#4C8DFF;
+    --primary-hover:#6EA5FF;
+    --primary-soft:rgba(76,141,255,.16);
+    --highlight:#9EC5FF;
+    --text-primary:#FFFFFF;
+    --text-secondary:#B9C9E8;
+    --text-disabled:rgba(255,255,255,.4);
+    --success:#43D17A;
+    --warning:#F5C451;
+    --error:#F06A6A;
+
+    --subject-bg:#183A70;
+    --subject-bg-hover:#214A86;
+    --subject-border:rgba(110,165,255,.25);
+    --subject-icon-bg:rgba(110,165,255,.18);
+    --subject-accent:#6EA5FF;
+    --subject-special:#F5CC67;
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
@@ -30,9 +56,9 @@
     margin:0;
     min-height:100vh;
     background:
-      radial-gradient(circle at 15% -10%, #1c3f76 0%, transparent 55%),
-      radial-gradient(circle at 100% 110%, #16345f 0%, transparent 50%),
-      var(--navy);
+      radial-gradient(circle at 15% -10%, var(--surface-hover) 0%, transparent 55%),
+      radial-gradient(circle at 100% 110%, var(--surface) 0%, transparent 50%),
+      var(--bg-main);
     font-family:'Nunito','Trebuchet MS','Segoe UI',Verdana,sans-serif;
     color:#fff;
     /* Bold white text on a dark background renders fuzzy in Chrome/Safari without this —
@@ -137,52 +163,62 @@
   }
   .subject-card{
     position: relative; display: flex; align-items: center; gap: 8px;
-    background: linear-gradient(135deg, var(--card-accent, var(--purple)), color-mix(in srgb, var(--card-accent, var(--purple)) 45%, black));
-    border-radius: 18px; padding: 16px 18px;
-    box-shadow: 0 8px 28px rgba(0,0,0,.28);
-    transition: transform .18s ease, box-shadow .18s ease;
+    height: auto; min-height: 72px; padding: 12px 16px;
+    background: linear-gradient(135deg, var(--subject-bg), var(--subject-bg-hover));
+    border: 1px solid var(--subject-border);
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.22);
+    transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
   }
-  .subject-card:hover{ transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,.34); }
-  
+  .subject-card:hover{
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, var(--subject-bg-hover), var(--subject-bg));
+    border-color: var(--subject-accent);
+    box-shadow: 0 10px 24px rgba(0,0,0,.3), 0 0 0 1px var(--subject-border);
+  }
+
   .subject-btn{
-    display:flex; align-items:center; gap:14px; flex:1;
-    background: none; border: none; padding: 0; cursor: pointer; text-align: left; color: #fff;
+    display:flex; align-items:center; gap:14px; flex:1; min-width:0;
+    background: none; border: none; padding: 0; cursor: pointer; text-align: left; color: var(--text-primary);
   }
   .subject-icon{
-    font-size:28px; width:48px; height:48px; display:flex; align-items:center; justify-content:center;
-    background:rgba(255,255,255,.18); border-radius:12px; flex:0 0 auto; overflow:hidden;
+    font-size:24px; width:42px; height:42px; display:flex; align-items:center; justify-content:center;
+    background:var(--subject-icon-bg); color:var(--subject-accent); border-radius:12px; flex:0 0 auto; overflow:hidden;
+    transition: transform .15s ease;
   }
+  .subject-card:hover .subject-icon{ transform: scale(1.04); }
   .subject-icon img{ width:100%; height:100%; object-fit:cover; }
-  .subject-label b{ display:block; font-size:16px; }
-  .subject-label span{ display:block; font-size:12px; opacity:.85; margin-top:2px; }
+  .subject-label b{ display:block; font-size:15px; font-weight:700; color:var(--text-primary); line-height:1.25; }
+  .subject-label span{ display:block; font-size:12px; color:var(--text-secondary); margin-top:1px; font-weight:400; }
   .participant-badge{
-    display:inline-flex !important; align-items:center; gap:4px; margin-top:6px !important; padding:2px 10px; border-radius:999px;
-    background:rgba(255,255,255,.16); color:#fff; font-size:11px; font-weight:bold; opacity:1 !important;
+    display:inline-flex !important; align-items:center; gap:4px; margin-top:5px !important; padding:2px 9px; border-radius:999px;
+    background:var(--subject-icon-bg); color:var(--subject-accent); font-size:10.5px; font-weight:700; opacity:1 !important;
   }
 
   .card-actions {
-    display: flex; gap: 10px; align-items: center;
+    display: flex; gap: 8px; align-items: center; flex:0 0 auto;
   }
   .card-action-group{ display:flex; flex-direction:column; align-items:center; gap:4px; }
-  .card-action-group .card-action-label{ font-size:10px; color:rgba(255,255,255,.85); font-weight:600; }
+  .card-action-group .card-action-label{ font-size:10px; color:var(--text-secondary); font-weight:600; }
   .subject-action-btn {
-    background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff; border-radius: 10px; width: 38px; height: 38px;
+    background: rgba(255,255,255,.06); border: 1px solid var(--subject-border);
+    color: var(--text-secondary); border-radius: 10px; width: 34px; height: 34px;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 14px; transition: background .15s;
+    cursor: pointer; font-size: 13px; transition: background .15s, color .15s, border-color .15s;
   }
-  .subject-action-btn:hover { background: rgba(255, 255, 255, 0.25); }
-  .subject-action-btn.delete:hover { background: var(--red); border-color: var(--red); }
+  .subject-action-btn:hover { background: var(--subject-accent); border-color: var(--subject-accent); color: var(--surface); }
+  .subject-action-btn.delete:hover { background: var(--error); border-color: var(--error); color:#fff; }
   .card-chevron{
-    color:rgba(255,255,255,.55); font-size:18px; font-weight:bold; margin-left:4px; flex:0 0 auto;
+    color: var(--text-secondary); font-size:16px; font-weight:bold; margin-left:2px; flex:0 0 auto; opacity:.6;
   }
 
   .subject-add-btn{
     display:flex; align-items:center; justify-content:center; gap:8px;
-    padding:16px; border-radius:14px; border:1.5px dashed rgba(255,255,255,.3);
-    background:rgba(255,255,255,.05); color:#c8d3ea; cursor:pointer; font-size:14px; font-weight:bold;
+    padding:14px; border-radius:14px; border:1.5px dashed var(--subject-border);
+    background:var(--subject-icon-bg); color:var(--subject-accent); cursor:pointer; font-size:14px; font-weight:700;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
   }
-  .subject-add-btn:hover{ background:rgba(255,255,255,.1); color:#fff; border-color:#fff; }
+  .subject-add-btn:hover{ background:var(--primary-soft); color:var(--text-primary); border-color:var(--subject-accent); }
 
   .home-footer{ margin-top:44px; font-size:12px; color:var(--muted); }
   .home-credit{ margin-top:6px; font-size:11px; color:var(--muted); }
@@ -2171,21 +2207,78 @@ function applyBrandingFromStorage(){
 
 /* ---------------- Theme Presets ---------------- */
 const THEMES = {
-  school:  { label:'🔵 School',  navy:'#0A1F42', navyMid:'#123061', flame:'#4FA8E8', flameLight:'#8FCBF5', purple:'#2C4A8C', swatch:'#0A1F42' },
-  forest:  { label:'🟢 Forest',  navy:'#0A2410', navyMid:'#12341A', flame:'#6FBF4A', flameLight:'#A0DE7E', purple:'#2E5C3A', swatch:'#0A2410' },
-  fantasy: { label:'🟣 Fantasy', navy:'#170A38', navyMid:'#241354', flame:'#A855F7', flameLight:'#D2A6FF', purple:'#5B2E9E', swatch:'#170A38' },
-  fun:     { label:'🟠 Fun',     navy:'#3A1D08', navyMid:'#552B0C', flame:'#F2941D', flameLight:'#FFC168', purple:'#B85E1F', swatch:'#3A1D08' }
+  school: {
+    label:'🔵 School', swatch:'#071B4D',
+    surface:'#071B4D', surfaceElevated:'#0B2866', surfaceHover:'#123875', border:'#284F8F',
+    primary:'#4C8DFF', primaryHover:'#6EA5FF', primarySoft:'rgba(76,141,255,.16)', highlight:'#9EC5FF',
+    textSecondary:'#B9C9E8', success:'#43D17A', warning:'#F5C451', error:'#F06A6A',
+    subjectBg:'#183A70', subjectBgHover:'#214A86', subjectBorder:'rgba(110,165,255,.25)',
+    subjectIconBg:'rgba(110,165,255,.18)', subjectAccent:'#6EA5FF', subjectSpecial:'#F5CC67'
+  },
+  forest: {
+    label:'🟢 Forest', swatch:'#07351B',
+    surface:'#07351B', surfaceElevated:'#0B4825', surfaceHover:'#105A2E', border:'#28633B',
+    primary:'#72C94A', primaryHover:'#8BE56A', primarySoft:'rgba(114,201,74,.15)', highlight:'#B4E89A',
+    textSecondary:'#B8D4BD', success:'#6EDB75', warning:'#E9C85B', error:'#E87868',
+    subjectBg:'#124A2A', subjectBgHover:'#185B34', subjectBorder:'rgba(139,229,106,.22)',
+    subjectIconBg:'rgba(139,229,106,.16)', subjectAccent:'#8BE56A', subjectSpecial:'#F5CC67'
+  },
+  fantasy: {
+    label:'🟣 Adventure', swatch:'#180A3D',
+    surface:'#180A3D', surfaceElevated:'#24105A', surfaceHover:'#301572', border:'#6138B5',
+    primary:'#A970FF', primaryHover:'#BE8CFF', primarySoft:'rgba(169,112,255,.16)', highlight:'#D8B9FF',
+    textSecondary:'#D0C3E8', success:'#69D89A', warning:'#F4C95D', error:'#E97986',
+    subjectBg:'#32145F', subjectBgHover:'#431C78', subjectBorder:'rgba(190,140,255,.28)',
+    subjectIconBg:'rgba(190,140,255,.16)', subjectAccent:'#BE8CFF', subjectSpecial:'#F5CC67'
+  },
+  fun: {
+    label:'🟠 Fun Kids', swatch:'#713008',
+    surface:'#713008', surfaceElevated:'#8D3C08', surfaceHover:'#A8490A', border:'#D66B19',
+    primary:'#FFD04A', primaryHover:'#FFE07A', primarySoft:'rgba(255,208,74,.18)', highlight:'#FFF0A8',
+    textSecondary:'#FFE0B8', success:'#63D889', warning:'#FFD04A', error:'#E96D63',
+    subjectBg:'#713008', subjectBgHover:'#8D3C08', subjectBorder:'rgba(255,208,74,.28)',
+    subjectIconBg:'rgba(255,208,74,.16)', subjectAccent:'#FFD04A', subjectSpecial:'#F5CC67'
+  }
 };
 
 function applyTheme(key){
   const t = THEMES[key];
   if(!t) return;
   const root = document.documentElement.style;
-  root.setProperty('--navy', t.navy);
-  root.setProperty('--navy-mid', t.navyMid);
-  root.setProperty('--flame', t.flame);
-  root.setProperty('--flame-light', t.flameLight);
-  root.setProperty('--purple', t.purple);
+
+  // New centralized design-system tokens (Part 2 of the visual system).
+  root.setProperty('--bg-main', t.surface);
+  root.setProperty('--surface', t.surface);
+  root.setProperty('--surface-elevated', t.surfaceElevated);
+  root.setProperty('--surface-hover', t.surfaceHover);
+  root.setProperty('--border', t.border);
+  root.setProperty('--primary', t.primary);
+  root.setProperty('--primary-hover', t.primaryHover);
+  root.setProperty('--primary-soft', t.primarySoft);
+  root.setProperty('--highlight', t.highlight);
+  root.setProperty('--text-secondary', t.textSecondary);
+  root.setProperty('--success', t.success);
+  root.setProperty('--warning', t.warning);
+  root.setProperty('--error', t.error);
+  root.setProperty('--subject-bg', t.subjectBg);
+  root.setProperty('--subject-bg-hover', t.subjectBgHover);
+  root.setProperty('--subject-border', t.subjectBorder);
+  root.setProperty('--subject-icon-bg', t.subjectIconBg);
+  root.setProperty('--subject-accent', t.subjectAccent);
+  root.setProperty('--subject-special', t.subjectSpecial);
+
+  // Legacy tokens, kept in sync so every existing rule (ribbons, buttons, inputs,
+  // wheel accents, mascot card, etc.) automatically follows the new palette too.
+  root.setProperty('--navy', t.surface);
+  root.setProperty('--navy-mid', t.surfaceElevated);
+  root.setProperty('--flame', t.primary);
+  root.setProperty('--flame-light', t.primaryHover);
+  root.setProperty('--purple', t.subjectBg);
+  root.setProperty('--red', t.error);
+  root.setProperty('--leaf', t.success);
+  root.setProperty('--leaf-dark', t.success);
+  root.setProperty('--muted', t.textSecondary);
+
   document.documentElement.setAttribute('data-theme', key);
   localStorage.setItem('stw_theme', key);
   renderThemeGrid();
@@ -2200,7 +2293,7 @@ function renderThemeGrid(){
     const t = THEMES[key];
     const el = document.createElement('div');
     el.className = 'theme-swatch' + (key === current ? ' selected' : '');
-    el.style.background = 'linear-gradient(135deg,' + t.navy + ',' + t.flame + ')';
+    el.style.background = 'linear-gradient(135deg,' + t.surface + ',' + t.primary + ')';
     el.title = t.label;
     el.onclick = ()=> applyTheme(key);
     el.innerHTML = (key === current ? '✓' : '') + '<span class="theme-swatch-label">' + t.label + '</span>';
