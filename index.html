@@ -3213,7 +3213,7 @@ async function attemptUnlock(){
     const ok = await res.json();
 
     if(ok === true){
-      localStorage.removeItem('stw_email_fail_count');
+      localStorage.removeItem('stw_email_call_count');
       localStorage.removeItem('stw_email_lock_until');
       localStorage.removeItem('stw_pin_fail_count');
       localStorage.removeItem('stw_pin_lock_until');
