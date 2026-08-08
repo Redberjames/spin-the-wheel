@@ -2189,6 +2189,9 @@ function openGeneralSettings(){
   document.getElementById('gsSchoolName').value = savedName !== null ? savedName : document.getElementById('schoolNameDisplay').textContent;
   document.getElementById('gsByline').value = savedByline !== null ? savedByline : document.getElementById('appBylineDisplay').textContent;
   document.getElementById('gsMsg').textContent = '';
+  // Reset the pending theme pick to whatever is actually saved, so any unsaved
+  // swatch selection from a previous visit doesn't linger.
+  pendingThemeKey = localStorage.getItem('stw_theme') || 'school';
   renderThemeGrid();
   updateSoundToggleBtn();
 
@@ -2226,6 +2229,11 @@ function saveGeneralSettings(){
   document.getElementById('schoolNameDisplay').textContent = name;
   localStorage.setItem('stw_byline', byline);
   document.getElementById('appBylineDisplay').textContent = byline;
+  // Theme was only "previewed" as selected in the grid until now — apply it
+  // (and persist it) for real as part of Save, same as name/byline above.
+  if(pendingThemeKey && pendingThemeKey !== (localStorage.getItem('stw_theme') || 'school')){
+    applyTheme(pendingThemeKey);
+  }
   const msg = document.getElementById('gsMsg');
   msg.textContent = 'Saved!';
   setTimeout(()=>{ msg.textContent = ''; }, 2000);
@@ -2274,6 +2282,8 @@ const THEMES = {
   }
 };
 
+// Applies a theme's CSS variables to the live document and persists it — this is
+// the "actually take effect" step, only ever called from Save (or on page load).
 function applyTheme(key){
   const t = THEMES[key];
   if(!t) return;
@@ -2314,13 +2324,23 @@ function applyTheme(key){
 
   document.documentElement.setAttribute('data-theme', key);
   localStorage.setItem('stw_theme', key);
+  pendingThemeKey = key;
+  renderThemeGrid();
+}
+
+// Theme selection inside Homepage Settings is pending until Save — clicking a
+// swatch only updates which one looks selected in the grid; it does not touch
+// the live app or localStorage until saveGeneralSettings() runs.
+let pendingThemeKey = null;
+function selectThemeOption(key){
+  pendingThemeKey = key;
   renderThemeGrid();
 }
 
 function renderThemeGrid(){
   const grid = document.getElementById('themeGrid');
   if(!grid) return;
-  const current = localStorage.getItem('stw_theme') || 'school';
+  const current = pendingThemeKey || localStorage.getItem('stw_theme') || 'school';
   grid.innerHTML = '';
   Object.keys(THEMES).forEach(key=>{
     const t = THEMES[key];
@@ -2328,7 +2348,7 @@ function renderThemeGrid(){
     el.className = 'theme-swatch' + (key === current ? ' selected' : '');
     el.style.background = 'linear-gradient(135deg,' + t.surface + ',' + t.primary + ')';
     el.title = t.label;
-    el.onclick = ()=> applyTheme(key);
+    el.onclick = ()=> selectThemeOption(key);
     el.innerHTML = (key === current ? '✓' : '') + '<span class="theme-swatch-label">' + t.label + '</span>';
     grid.appendChild(el);
   });
